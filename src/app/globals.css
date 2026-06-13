@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+:root {
+  --jd-blue: #1274c0;
+  --jd-blue-dark: #0d5a94;
+  --jd-orange: #ff6c00;
+  --jd-orange-dark: #e55f00;
+  --jd-green: #25a244;
+  --jd-green-dark: #1e8536;
+  --jd-bg: #ffffff;
+  --jd-border: #e0e0e0;
+  --jd-muted: #717171;
+  --jd-text: #111111;
+  --jd-surface: #f7f7f7;
+}
+
+body {
+  background: var(--jd-bg);
+  color: var(--jd-text);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+a {
+  color: inherit;
+}
+
+.jd-btn-call {
+  background: var(--jd-green);
+  color: #fff;
+}
+.jd-btn-call:hover {
+  background: var(--jd-green-dark);
+}
+
+.jd-btn-primary {
+  background: var(--jd-blue);
+  color: #fff;
+}
+.jd-btn-primary:hover {
+  background: var(--jd-blue-dark);
+}
+
+.jd-btn-orange {
+  background: var(--jd-orange);
+  color: #fff;
+}
+.jd-btn-orange:hover {
+  background: var(--jd-orange-dark);
+}
+
+.jd-rating-badge {
+  background: var(--jd-green);
+  color: #fff;
+}

@@ -1,13 +1,15 @@
 import { readBusinesses } from "@/lib/businesses-data";
 import type { Business } from "@/types/business";
+import { CATEGORY_REGISTRY } from "@/lib/category-registry";
 import {
-  VERTICALS,
+  LEGACY_HVAC_VERTICAL,
   getBusinessVertical,
   getSubcategoryPath,
   getSubcategorySlugs,
   getVerticalPath,
   isActiveBusiness,
-  isValidForVertical,
+  isHvacCategorySlug,
+  matchesVerticalFilter,
   type CategoryStat,
   type PublicBusinessQuery,
   type VerticalStat,
@@ -19,7 +21,7 @@ function allBusinesses(): Business[] {
 
 export function matchesPublicQuery(business: Business, query: PublicBusinessQuery): boolean {
   if (!isActiveBusiness(business)) return false;
-  if (query.vertical && !isValidForVertical(business, query.vertical)) return false;
+  if (query.vertical && !matchesVerticalFilter(business, query.vertical)) return false;
   if (query.categorySlug && business.categorySlug !== query.categorySlug) return false;
   if (query.city && business.city !== query.city) return false;
   if (query.state && business.state !== query.state) return false;
@@ -30,41 +32,60 @@ export function getPublicBusinesses(query: PublicBusinessQuery = {}): Business[]
   return allBusinesses().filter((business) => matchesPublicQuery(business, query));
 }
 
-export function getActiveVerticalStats(): VerticalStat[] {
-  const counts = new Map<string, number>();
+function verticalNavLabel(verticalSlug: string, businesses: Business[]): string {
+  const vertical = CATEGORY_REGISTRY.find((v) => v.slug === verticalSlug);
+  if (!vertical) return verticalSlug;
 
-  for (const business of allBusinesses()) {
-    if (!isActiveBusiness(business)) continue;
-    const vertical = getBusinessVertical(business);
-    if (!isValidForVertical(business, vertical)) continue;
-    counts.set(vertical, (counts.get(vertical) ?? 0) + 1);
+  if (verticalSlug !== "home-services") return vertical.navLabel;
+
+  const homeListings = businesses.filter((b) => matchesVerticalFilter(b, verticalSlug));
+  if (homeListings.length === 0) return vertical.navLabel;
+
+  const hvacOnly = homeListings.every((b) => isHvacCategorySlug(b.categorySlug));
+  return hvacOnly ? "HVAC Texas" : vertical.navLabel;
+}
+
+export function getActiveVerticalStats(): VerticalStat[] {
+  const businesses = allBusinesses().filter(isActiveBusiness);
+  const stats: VerticalStat[] = [];
+
+  for (const vertical of CATEGORY_REGISTRY) {
+    const count = businesses.filter((b) => matchesVerticalFilter(b, vertical.slug)).length;
+    if (count === 0) continue;
+
+    const navSlug = vertical.slug === "home-services" && verticalNavLabel(vertical.slug, businesses) === "HVAC Texas"
+      ? LEGACY_HVAC_VERTICAL
+      : vertical.slug;
+
+    stats.push({
+      slug: navSlug,
+      label: vertical.label,
+      navLabel: verticalNavLabel(vertical.slug, businesses),
+      count,
+      href: getVerticalPath(navSlug),
+    });
   }
 
-  return VERTICALS.filter((vertical) => (counts.get(vertical.slug) ?? 0) > 0)
-    .map((vertical) => ({
-      slug: vertical.slug,
-      label: vertical.label,
-      navLabel: vertical.navLabel,
-      count: counts.get(vertical.slug) ?? 0,
-      href: getVerticalPath(vertical.slug),
-    }))
-    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  return stats.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }
 
 export function getActiveSubcategoryStats(verticalSlug: string): CategoryStat[] {
-  const vertical = VERTICALS.find((v) => v.slug === verticalSlug);
-  if (!vertical) return [];
+  const registryVertical =
+    verticalSlug === LEGACY_HVAC_VERTICAL
+      ? CATEGORY_REGISTRY.find((v) => v.slug === "home-services")
+      : CATEGORY_REGISTRY.find((v) => v.slug === verticalSlug);
+
+  if (!registryVertical) return [];
 
   const counts = new Map<string, number>();
-  const allowed = getSubcategorySlugs(verticalSlug);
 
   for (const business of allBusinesses()) {
-    if (!isValidForVertical(business, verticalSlug)) continue;
-    if (!allowed.has(business.categorySlug)) continue;
+    if (!matchesVerticalFilter(business, verticalSlug)) continue;
+    if (!getSubcategorySlugs(registryVertical.slug).has(business.categorySlug)) continue;
     counts.set(business.categorySlug, (counts.get(business.categorySlug) ?? 0) + 1);
   }
 
-  return vertical.subcategories
+  return registryVertical.subcategories
     .filter((sub) => (counts.get(sub.slug) ?? 0) > 0)
     .map((sub) => ({
       slug: sub.slug,
@@ -79,17 +100,30 @@ export function getActiveSearchTags(limit = 6): CategoryStat[] {
   const tags: CategoryStat[] = [];
 
   for (const verticalStat of activeVerticals) {
-    const vertical = VERTICALS.find((v) => v.slug === verticalStat.slug);
+    const registrySlug =
+      verticalStat.slug === LEGACY_HVAC_VERTICAL ? "home-services" : verticalStat.slug;
+    const vertical = CATEGORY_REGISTRY.find((v) => v.slug === registrySlug);
     if (!vertical) continue;
     for (const tag of vertical.searchTags) {
       tags.push({
-        slug: vertical.slug,
+        slug: verticalStat.slug,
         label: tag,
         count: verticalStat.count,
-        href: getVerticalPath(vertical.slug),
+        href: getVerticalPath(verticalStat.slug),
       });
     }
   }
 
   return tags.slice(0, limit);
 }
+
+/** @deprecated Prefer matchesVerticalFilter via getPublicBusinesses */
+export function isValidForVertical(
+  business: Pick<Business, "vertical" | "categorySlug" | "status">,
+  verticalSlug: string,
+): boolean {
+  return matchesVerticalFilter(business, verticalSlug);
+}
+
+/** @deprecated Prefer getBusinessVertical from categories-config */
+export { getBusinessVertical };

@@ -7,6 +7,8 @@ export type NewListingPayload = {
   phone: string;
   address: string;
   website?: string;
+  /** verticalSlug:categorySlug — preferred for multi-category listings */
+  categoryKey?: string;
   category?: string;
   city?: string;
   state?: string;

@@ -14,6 +14,8 @@ import type { AddressSelection } from "@/types/address-search";
 import type { ListingPrefill } from "@/lib/listing-prefill";
 import { prefillSourceMessage } from "@/lib/prefill-messages";
 import { storeListingOtp } from "@/lib/listing-otp-client";
+import { getDefaultListingCategoryKey } from "@/lib/categories-config";
+import { ListingCategorySelect } from "@/components/ListingCategorySelect";
 
 type Step = "gbp" | "form" | "sent";
 
@@ -61,7 +63,7 @@ export function ListYourBusinessForm() {
   const [businessEmail, setBusinessEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [website, setWebsite] = useState("");
-  const [category, setCategory] = useState("HVAC Contractor");
+  const [categoryKey, setCategoryKey] = useState(getDefaultListingCategoryKey);
   const [addressInput, setAddressInput] = useState("");
   const [addressLine, setAddressLine] = useState("");
   const [city, setCity] = useState("Dallas");
@@ -149,7 +151,7 @@ export function ListYourBusinessForm() {
       businessId: isClaim ? check.businessId : undefined,
       phone: isClaim ? undefined : phone,
       website: isClaim ? undefined : website,
-      category: isClaim ? undefined : category,
+      categoryKey: isClaim ? undefined : categoryKey,
       address: isClaim ? undefined : addressLine || addressInput,
       city: isClaim ? undefined : city,
       state: isClaim ? undefined : state,
@@ -331,26 +333,7 @@ export function ListYourBusinessForm() {
                   required
                 />
                 <Field label="Website" value={website} onChange={setWebsite} />
-                <label className="block text-sm">
-                  <span className="font-medium text-[#333]">Category</span>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="mt-1 w-full rounded border border-[#ccc] px-3 py-2 text-sm"
-                  >
-                    {[
-                      "HVAC Contractor",
-                      "AC Repair",
-                      "Heating Contractor",
-                      "Plumbing & HVAC",
-                      "Air Duct Cleaning",
-                    ].map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <ListingCategorySelect value={categoryKey} onChange={setCategoryKey} />
                 <label className="block text-sm">
                   <span className="font-medium text-[#333]">Description</span>
                   <span className="mt-0.5 block text-xs text-[#717171]">

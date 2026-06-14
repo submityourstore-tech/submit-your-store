@@ -41,7 +41,7 @@ def main() -> None:
         r
         for r in rows
         if r.get("status", "active") == "active"
-        and r.get("vertical") == "hvac"
+        and r.get("vertical") == "home-services"
         and is_hvac_subcategory(r.get("categorySlug", ""))
     ]
 

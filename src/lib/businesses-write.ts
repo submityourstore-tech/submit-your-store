@@ -1,15 +1,12 @@
 import { writeFileSync, cpSync, existsSync, readdirSync } from "fs";
 import path from "path";
-import { VERTICALS, slugifyCategoryLabel } from "@/lib/categories-config";
+import { resolveCategoryKey, resolveCategoryLabel } from "@/lib/categories-config";
 import { readBusinesses } from "@/lib/businesses-data";
 import { businessMediaDir, pendingMediaDir } from "@/lib/listing-media";
 import type { Business, SocialLinks } from "@/types/business";
 import type { NewListingPayload } from "@/types/listing";
 
 const JSON_PATH = path.join(process.cwd(), "data", "businesses.json");
-
-const HVAC_NAME = /hvac|air(?:\s|-)?condition|heating|cooling|a\/c|\bac\b|furnace/i;
-const PLUMBING_NAME = /plumb/i;
 
 function slugifyName(text: string): string {
   return text
@@ -52,26 +49,18 @@ function normalizePhone(raw: string): string {
   return raw.trim();
 }
 
-function resolveCategory(name: string, categoryLabel?: string) {
-  const hvac = VERTICALS.find((v) => v.slug === "hvac");
-  const label = categoryLabel?.trim() || "HVAC Contractor";
-  let categorySlug =
-    hvac?.subcategories.find((s) => s.label.toLowerCase() === label.toLowerCase())?.slug ??
-    slugifyCategoryLabel(label);
-
-  if (PLUMBING_NAME.test(name) && HVAC_NAME.test(name)) {
-    categorySlug = "plumbing-hvac";
+function resolveCategory(payload: NewListingPayload) {
+  if (payload.categoryKey) {
+    const resolved = resolveCategoryKey(payload.categoryKey);
+    if (resolved) return resolved;
   }
 
-  const allowed = new Set(hvac?.subcategories.map((s) => s.slug) ?? []);
-  if (!allowed.has(categorySlug)) {
-    categorySlug = "hvac-contractor";
+  if (payload.category?.includes(":")) {
+    const resolved = resolveCategoryKey(payload.category);
+    if (resolved) return resolved;
   }
 
-  const category =
-    hvac?.subcategories.find((s) => s.slug === categorySlug)?.label ?? "HVAC Contractor";
-
-  return { vertical: "hvac" as const, category, categorySlug };
+  return resolveCategoryLabel(payload.category ?? "", payload.businessName);
 }
 
 function defaultSocial(social?: SocialLinks): SocialLinks {
@@ -124,7 +113,7 @@ export function publishNewListing(payload: NewListingPayload): Business {
   const rows = readBusinesses();
   const usedIds = new Set(rows.map((b) => b.id));
   const id = uniqueBusinessId(payload.businessName, usedIds);
-  const { vertical, category, categorySlug } = resolveCategory(payload.businessName, payload.category);
+  const { vertical, category, categorySlug } = resolveCategory(payload);
 
   const moved = copyPendingMedia(payload.uploadSessionId, id);
   const logo = payload.logo?.trim() || moved.logo;

@@ -89,7 +89,7 @@ def classify_business(name: str, raw_category: str) -> dict[str, str]:
         slug = "plumbing-hvac"
 
     return {
-        "vertical": "hvac",
+        "vertical": "home-services",
         "category": HVAC_SUBCATEGORIES.get(slug, slug.replace("-", " ").title()),
         "categorySlug": slug,
         "status": "active",

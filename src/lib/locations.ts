@@ -5,6 +5,7 @@ import {
   getStateLabel,
   parseLocationSlug,
   toLocationSlug,
+  type LocationStat,
 } from "@/lib/location-utils";
 import { getVerticalCityPath, getVerticalPath, resolveBusinessBrowseVertical } from "@/lib/categories-config";
 

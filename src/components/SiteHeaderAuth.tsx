@@ -14,12 +14,12 @@ export function SiteHeaderAuth() {
   if (user) {
     return (
       <div className="flex items-center gap-3">
-        <div className="hidden items-center gap-2 sm:flex">
+        <Link href={`/members/${user.id}`} className="hidden items-center gap-2 sm:flex hover:opacity-90">
           <UserAvatar name={user.name} image={user.image} size="sm" verified={user.emailVerified} />
           <span className="text-sm text-[#555]">
             Hi, <span className="font-semibold text-[#1274c0]">{user.name.split(" ")[0]}</span>
           </span>
-        </div>
+        </Link>
         <button
           type="button"
           onClick={() => void signOut()}

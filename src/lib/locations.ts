@@ -8,13 +8,7 @@ import {
 } from "@/lib/location-utils";
 import { getVerticalCityPath, getVerticalPath, resolveBusinessBrowseVertical } from "@/lib/categories-config";
 
-export type LocationStat = {
-  city: string;
-  state: string;
-  label: string;
-  slug: string;
-  count: number;
-};
+export type { LocationStat } from "@/lib/location-utils";
 
 export {
   formatLocationLabel,

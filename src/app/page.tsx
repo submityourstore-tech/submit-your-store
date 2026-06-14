@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { BusinessCard } from "@/components/BusinessCard";
-import { LocationBrowse } from "@/components/LocationBrowse";
+import { LocationBrowsePanel } from "@/components/LocationBrowsePanel";
 import { SearchHero } from "@/components/SearchHero";
 import { SidePromoTabs } from "@/components/SidePromoTabs";
-import { getActiveSearchTags, getActiveSubcategoryStats, getActiveVerticalStats } from "@/lib/categories.server";
+import { getActiveSubcategoryStats, getActiveVerticalStats } from "@/lib/categories.server";
 import { getFeaturedBusinesses, getPublicBusinessCount } from "@/lib/businesses";
 import { getLocationStats } from "@/lib/locations";
 import { getReviewSummary } from "@/lib/reviews.server";
@@ -16,27 +16,26 @@ export default function HomePage() {
   const categories = getActiveSubcategoryStats(browseVertical);
   const locations = getLocationStats("TX", browseVertical);
   const total = getPublicBusinessCount(browseVertical);
-  const searchTags = getActiveSearchTags();
 
   return (
     <div className="bg-white">
       <SidePromoTabs />
-      <SearchHero tags={searchTags} searchAction={primaryVertical?.href ?? "/hvac/texas"} />
+      <SearchHero searchAction="/listings" />
 
       <section className="mx-auto max-w-6xl px-4 py-8">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e0e0e0] pb-4">
           <div>
             <h2 className="text-lg font-bold text-[#111]">
-              Popular in <span className="text-[#1274c0]">Texas</span>
+              Popular <span className="text-[#1274c0]">listings</span>
             </h2>
             <p className="mt-0.5 text-sm text-[#717171]">{total} businesses listed</p>
           </div>
           {primaryVertical && (
             <Link
-              href={primaryVertical.href}
+              href="/listings"
               className="text-sm font-semibold text-[#1274c0] hover:underline"
             >
-              Browse by location →
+              Browse all listings →
             </Link>
           )}
         </div>
@@ -58,10 +57,15 @@ export default function HomePage() {
           <div className="mx-auto max-w-6xl px-4 py-8">
             <h2 className="text-lg font-bold text-[#111]">Browse by location</h2>
             <p className="mt-1 text-sm text-[#717171]">
-              {primaryVertical?.label ?? "Local"} businesses across Texas
+              {primaryVertical?.label ?? "Local"} businesses worldwide
             </p>
             <div className="mt-4">
-              <LocationBrowse locations={locations} verticalSlug={browseVertical} />
+              <LocationBrowsePanel
+                locations={locations}
+                verticalSlug={browseVertical}
+                variant="compact"
+                totalListings={total}
+              />
             </div>
           </div>
         </section>

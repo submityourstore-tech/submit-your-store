@@ -1,18 +1,16 @@
 import Link from "next/link";
-import type { LocationStat } from "@/lib/locations";
+import type { LocationStat } from "@/lib/location-utils";
+import { getStateLabel } from "@/lib/location-utils";
 
 type LocationBrowseProps = {
   locations: LocationStat[];
-  stateLabel?: string;
   verticalSlug?: string;
 };
 
 export function LocationBrowse({
   locations,
-  stateLabel = "Texas",
   verticalSlug = "hvac",
-}: LocationBrowseProps) {
-  return (
+}: LocationBrowseProps) {  return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {locations.map((loc) => (
         <Link
@@ -22,7 +20,7 @@ export function LocationBrowse({
         >
           <div>
             <p className="font-semibold text-[#111]">{loc.label}</p>
-            <p className="text-xs text-[#717171]">{stateLabel}</p>
+            <p className="text-xs text-[#717171]">{getStateLabel(loc.state)}</p>
           </div>
           <span className="rounded-full bg-[#e8f4fc] px-2.5 py-0.5 text-sm font-semibold text-[#1274c0]">
             {loc.count}

@@ -9,9 +9,9 @@ type SearchBarProps = {
 };
 
 export function SearchBar({
-  location = "Texas",
+  location = "Worldwide",
   query = "",
-  action = "/hvac/texas",
+  action = "/listings",
 }: SearchBarProps) {
   const router = useRouter();
 

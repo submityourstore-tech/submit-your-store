@@ -3,11 +3,11 @@ import { SearchBar } from "@/components/SearchBar";
 import type { CategoryStat } from "@/lib/categories-config";
 
 type SearchHeroProps = {
-  tags: CategoryStat[];
+  tags?: CategoryStat[];
   searchAction?: string;
 };
 
-export function SearchHero({ tags, searchAction = "/hvac/texas" }: SearchHeroProps) {
+export function SearchHero({ tags = [], searchAction = "/listings" }: SearchHeroProps) {
   return (
     <section className="border-b border-[#e0e0e0] bg-white py-8">
       <div className="mx-auto max-w-6xl px-4">

@@ -21,6 +21,23 @@ export default function ListYourBusinessPage() {
         <h1 className="mt-4 text-2xl font-bold text-[#111] sm:text-3xl">
           List or claim your <span className="text-[#1274c0]">business</span>
         </h1>
+        <p className="mt-4 text-sm leading-relaxed text-[#555] sm:text-base">
+          Submit Your Store is a free worldwide business directory. Add your company so customers can find you in
+          category and city browse pages, read reviews, and contact you directly. Listings require email verification
+          and a Google Business Profile link — see{" "}
+          <a href="/how-it-works" className="font-medium text-[#1274c0] hover:underline">
+            how it works
+          </a>{" "}
+          or our{" "}
+          <a href="/faq" className="font-medium text-[#1274c0] hover:underline">
+            FAQ
+          </a>{" "}
+          for details. By submitting, you agree to our{" "}
+          <a href="/terms-of-service" className="font-medium text-[#1274c0] hover:underline">
+            Terms of Service
+          </a>
+          .
+        </p>
         <ul className="mt-4 space-y-2 text-sm text-[#555]">
           <li>✓ Google Business Profile (GBP) link is mandatory</li>
           <li>✓ Business domain email is mandatory — verification goes there only</li>

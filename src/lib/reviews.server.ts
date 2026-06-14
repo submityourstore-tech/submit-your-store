@@ -19,6 +19,20 @@ export function getReviewsForBusiness(businessId: string): SiteReview[] {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
+export function getReviewsForUser(userId: string): SiteReview[] {
+  return loadReviews()
+    .filter((r) => r.userId === userId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export function getMemberIdsWithReviews(): string[] {
+  const ids = new Set<string>();
+  for (const review of loadReviews()) {
+    if (review.userId) ids.add(review.userId);
+  }
+  return [...ids];
+}
+
 export function getReviewSummary(businessId: string): { average: number; count: number } | null {
   const list = getReviewsForBusiness(businessId);
   if (list.length === 0) return null;

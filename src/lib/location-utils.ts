@@ -35,3 +35,11 @@ export function getStateLabel(state: string): string {
   const code = state.trim().toUpperCase();
   return STATE_LABELS[code] ?? state;
 }
+
+export type LocationStat = {
+  city: string;
+  state: string;
+  label: string;
+  slug: string;
+  count: number;
+};

@@ -1,7 +1,7 @@
+import Link from "next/link";
 import type { SiteReview } from "@/types/business";
 import { RatingBadge } from "./RatingBadge";
 import { UserAvatar } from "./UserAvatar";
-
 type SiteReviewsProps = {
   reviews: SiteReview[];
   average: number;
@@ -28,7 +28,16 @@ export function SiteReviews({ reviews, average }: SiteReviewsProps) {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <p className="font-semibold text-[#1274c0]">{review.userName}</p>
+                    {review.userId ? (
+                      <Link
+                        href={`/members/${review.userId}`}
+                        className="font-semibold text-[#1274c0] hover:underline"
+                      >
+                        {review.userName}
+                      </Link>
+                    ) : (
+                      <p className="font-semibold text-[#1274c0]">{review.userName}</p>
+                    )}
                     {review.emailVerified && (
                       <span className="text-xs font-medium text-[#25a244]">Verified member</span>
                     )}

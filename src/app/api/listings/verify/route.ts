@@ -6,6 +6,7 @@ import { publishNewListing } from "@/lib/businesses-write";
 import { revalidateBusinessListingPaths } from "@/lib/revalidate-paths";
 import { hashValue } from "@/lib/gbp";
 import { sendManageAccessEmail } from "@/lib/email";
+import { getSiteUrl } from "@/lib/site-config";
 import {
   createManageSession,
   findPendingVerification,
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
     const business = getBusinessById(record.businessId);
     const businessName = business?.name ?? "your business";
     const { token } = createManageSession(record.businessId, record.businessEmail);
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+    const baseUrl = getSiteUrl();
     const manageUrl = `${baseUrl}/manage-listing/${record.businessId}?token=${token}`;
 
     await sendManageAccessEmail({

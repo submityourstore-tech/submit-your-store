@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomBytes, randomUUID } from "crypto";
 import { readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { hashValue, isValidEmail } from "@/lib/gbp";
@@ -148,6 +148,41 @@ export function verifyUserPassword(email: string, password: string): UserAccount
   if (!user?.passwordHash) return null;
   if (user.passwordHash !== hashValue(password)) return null;
   return user;
+}
+
+export function upsertVerifiedReviewUser(input: {
+  name: string;
+  email: string;
+  phone?: string;
+}): { user: UserAccount; tempPassword: string } {
+  const name = input.name.trim();
+  const email = input.email.trim().toLowerCase();
+  const store = readStore();
+
+  let user = store.users.find((u) => u.email === email) ?? null;
+  const tempPassword = randomBytes(12).toString("base64url");
+
+  if (user) {
+    user.name = name.length >= 2 ? name : user.name;
+    user.emailVerified = true;
+    user.passwordHash = hashValue(tempPassword);
+  } else {
+    user = {
+      id: randomUUID(),
+      name: name.length >= 2 ? name : email.split("@")[0] || "Member",
+      email,
+      passwordHash: hashValue(tempPassword),
+      image: null,
+      emailVerified: true,
+      provider: "credentials",
+      providerAccountId: null,
+      createdAt: new Date().toISOString(),
+    };
+    store.users.push(user);
+  }
+
+  writeStore(store);
+  return { user: normalizeUser(user), tempPassword };
 }
 
 /** @deprecated Legacy cookie sessions — NextAuth JWT is used instead. */

@@ -5,6 +5,7 @@ import { readBusinesses } from "@/lib/businesses-data";
 import { isActiveBusiness } from "@/lib/categories-config";
 import { getLocationStats } from "@/lib/locations";
 import { getSiteUrl } from "@/lib/site-config";
+import { getAllBlogPosts } from "@/lib/blogs.server";
 
 const STATIC_PATHS = [
   "",
@@ -14,6 +15,7 @@ const STATIC_PATHS = [
   "/contact",
   "/how-it-works",
   "/faq",
+  "/blog",
   "/privacy-policy",
   "/terms-of-service",
   "/cookie-policy",
@@ -59,5 +61,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }
   }
 
-  return [...staticEntries, ...businessEntries, ...verticalEntries];
+  const blogEntries: MetadataRoute.Sitemap = getAllBlogPosts().map((post) => ({
+    url: `${base}/blog/${post.slug}`,
+    lastModified: now,
+    changeFrequency: "weekly" as const,
+    priority: 0.65,
+  }));
+
+  return [...staticEntries, ...businessEntries, ...verticalEntries, ...blogEntries];
 }

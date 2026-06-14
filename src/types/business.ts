@@ -6,6 +6,23 @@ export type SocialLinks = {
   twitter: string | null;
 };
 
+export type WeeklyHoursEntry = {
+  day: string;
+  hours: string;
+};
+
+export type AboutBlock = {
+  heading: string;
+  body: string;
+  bullets?: string[];
+};
+
+export type BusinessFaq = {
+  question: string;
+  answer: string;
+  source?: "customer-review";
+};
+
 export type Business = {
   id: string;
   name: string;
@@ -24,6 +41,14 @@ export type Business = {
   description: string;
   logo?: string;
   gallery?: string[];
+  faqs?: BusinessFaq[];
+  aboutBlocks?: AboutBlock[];
+  googleRating?: number;
+  googleReviewCount?: number;
+  googleReviews?: string[];
+  hoursStatus?: string;
+  weeklyHours?: WeeklyHoursEntry[];
+  timezone?: string;
 };
 
 export type SiteReview = {

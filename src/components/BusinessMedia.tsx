@@ -4,13 +4,14 @@ import type { Business } from "@/types/business";
 type BusinessAvatarProps = {
   name: string;
   logo?: string | null;
-  size?: "card" | "detail";
+  size?: "card" | "blog" | "detail";
   className?: string;
 };
 
 const SIZE = {
-  card: { box: "h-[88px] w-[88px] sm:h-[100px] sm:w-[100px]", text: "text-lg" },
-  detail: { box: "h-24 w-24", text: "text-2xl" },
+  card: { box: "h-[88px] w-[88px] sm:h-[100px] sm:w-[100px]", text: "text-lg", px: 100 },
+  blog: { box: "h-[64px] w-[64px] sm:h-[72px] sm:w-[72px]", text: "text-sm", px: 72 },
+  detail: { box: "h-24 w-24", text: "text-2xl", px: 96 },
 } as const;
 
 export function BusinessAvatar({ name, logo, size = "card", className = "" }: BusinessAvatarProps) {
@@ -23,17 +24,21 @@ export function BusinessAvatar({ name, logo, size = "card", className = "" }: Bu
   const dims = SIZE[size];
 
   if (logo) {
-    const px = size === "detail" ? 96 : 100;
+    const cover = size === "blog";
     return (
       <div
-        className={`flex shrink-0 items-center justify-center overflow-hidden rounded border border-[#e0e0e0] bg-white ${dims.box} ${className}`}
+        className={`relative shrink-0 overflow-hidden rounded border border-[#e0e0e0] bg-[#fafafa] ${dims.box} ${className}`}
       >
         <Image
           src={logo}
           alt={`${name} logo`}
-          width={px}
-          height={px}
-          className="max-h-full max-w-full object-contain p-1.5"
+          fill
+          sizes={`${dims.px}px`}
+          className={
+            cover
+              ? "object-cover object-center"
+              : "object-contain object-center p-0.5"
+          }
         />
       </div>
     );

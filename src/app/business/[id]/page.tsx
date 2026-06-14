@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { BusinessAddress } from "@/components/BusinessAddress";
-import { BusinessAvatar, BusinessGallery } from "@/components/BusinessMedia";
-import { RatingBadge } from "@/components/RatingBadge";
+import { BusinessAboutBlocks } from "@/components/BusinessAboutBlocks";
+import { BusinessContactSection } from "@/components/BusinessContactSection";
+import { BusinessGallery } from "@/components/BusinessMedia";
+import { BusinessHoursTable } from "@/components/BusinessHoursTable";
+import { BusinessListingHero } from "@/components/BusinessListingHero";
+import { WhatCustomersSay } from "@/components/WhatCustomersSay";
 import { SidePromoTabs } from "@/components/SidePromoTabs";
 import { SiteReviews } from "@/components/SiteReviews";
 import { WriteReviewForm } from "@/components/WriteReviewForm";
-import { SocialIconLinks } from "@/components/SocialIcons";
 import { getBusinessById, getPublicBusinessList } from "@/lib/businesses";
 import {
   getVerticalPath,
@@ -15,11 +17,15 @@ import {
   matchesVerticalFilter,
   resolveBusinessBrowseVertical,
 } from "@/lib/categories-config";
+import { getDisplayRating } from "@/lib/display-rating";
 import { getReviewSummary, getReviewsForBusiness } from "@/lib/reviews.server";
 import { getValidSocialLinks } from "@/lib/social";
 import { formatDisplayAddress } from "@/lib/address";
 import { getLocationFromBusiness, getStateLabel } from "@/lib/locations";
 import { getActiveVerticalBrowse, verticalBreadcrumbLabel } from "@/lib/vertical-pages.server";
+import { BusinessVoteButtons } from "@/components/BusinessVoteButtons";
+import { getBusinessVoteStats, getUserVote } from "@/lib/business-votes.server";
+import { getCurrentUser } from "@/lib/user-auth.server";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -56,12 +62,16 @@ export default async function BusinessPage({ params }: PageProps) {
 
   const reviews = getReviewsForBusiness(id);
   const reviewSummary = getReviewSummary(id);
+  const displayRating = getDisplayRating(business, reviewSummary);
   const socialLinks = getValidSocialLinks(business.social);
   const displayAddress = formatDisplayAddress(business);
   const location = getLocationFromBusiness(business);
   const stateLabel = getStateLabel(business.state);
   const verticalLabel = verticalBreadcrumbLabel(browseVertical);
   const verticalHref = getVerticalPath(browseVertical);
+  const user = await getCurrentUser();
+  const voteStats = getBusinessVoteStats(id);
+  const userVote = user ? getUserVote(id, user.id) : null;
 
   return (
     <div className="bg-white">
@@ -82,106 +92,53 @@ export default async function BusinessPage({ params }: PageProps) {
       </div>
 
       <div className="mx-auto max-w-4xl px-4 py-6">
-        <header className="rounded border border-[#e0e0e0] bg-white p-5 shadow-sm">
-          <div className="flex gap-4">
-            <BusinessAvatar name={business.name} logo={business.logo} size="detail" />
-            <div className="min-w-0 flex-1">
-              <span className="inline-block rounded border border-[#e8e8e8] bg-[#fafafa] px-2 py-0.5 text-xs font-medium text-[#555]">
-                {business.category}
-              </span>
-              <h1 className="mt-2 text-2xl font-bold text-[#111] sm:text-3xl">{business.name}</h1>
-              <BusinessAddress business={business} className="mt-1" />
-              {reviewSummary && (
-                <div className="mt-3">
-                  <RatingBadge rating={reviewSummary.average} count={reviewSummary.count} />
-                </div>
-              )}
-            </div>
-          </div>
+        <BusinessListingHero business={business} displayRating={displayRating} />
 
-          <div className="mt-4 flex flex-wrap gap-2 border-t border-[#eee] pt-4">
-            <a
-              href={`tel:${business.phone}`}
-              className="jd-btn-call inline-flex items-center gap-1.5 rounded px-5 py-2.5 text-sm font-semibold"
-            >
-              📞 {business.phone}
-            </a>
-            {business.website && (
-              <a
-                href={business.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="jd-btn-primary inline-flex items-center rounded px-5 py-2.5 text-sm font-semibold"
-              >
-                Visit Website
-              </a>
-            )}
-            {business.googleMapsUrl && (
-              <a
-                href={business.googleMapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center rounded border border-[#1274c0] px-5 py-2.5 text-sm font-semibold text-[#1274c0] hover:bg-[#f0f7fd]"
-              >
-                Get Directions
-              </a>
-            )}
-            <a
-              href="#write-review"
-              className="jd-btn-orange inline-flex items-center rounded px-5 py-2.5 text-sm font-semibold"
-            >
-              Rate & Review
-            </a>
+        <section className="mt-4 overflow-hidden rounded border border-[#e0e0e0] bg-white shadow-sm">
+          <div className="border-b border-[#eee] bg-gradient-to-r from-[#f5f9fd] to-white px-5 py-4">
+            <h2 className="text-base font-bold text-[#1274c0]">🗳️ Community Vote</h2>
+            <p className="mt-1 text-sm text-[#717171]">
+              Pick up or down, then submit your vote — helps rank {business.name} across our directory.
+            </p>
           </div>
-        </header>
-
-        <section className="mt-4 rounded border border-[#e0e0e0] bg-white p-5 shadow-sm">
-          <h2 className="text-base font-bold text-[#1274c0]">About</h2>
-          <p className="mt-2 leading-relaxed text-[#555]">{business.description}</p>
+          <div className="px-5 py-4 sm:px-6">
+            <BusinessVoteButtons
+              businessId={business.id}
+              businessName={business.name}
+              initialUpvotes={voteStats.upvotes}
+              initialDownvotes={voteStats.downvotes}
+              initialUserVote={userVote}
+            />
+          </div>
         </section>
+
+        {business.aboutBlocks && business.aboutBlocks.length > 0 ? (
+          <BusinessAboutBlocks blocks={business.aboutBlocks} />
+        ) : (
+          <section className="mt-4 rounded border border-[#e0e0e0] bg-white p-5 shadow-sm">
+            <h2 className="text-base font-bold text-[#1274c0]">About</h2>
+            <p className="mt-2 leading-relaxed text-[#555]">{business.description}</p>
+          </section>
+        )}
+
+        {business.googleReviews && business.googleReviews.length > 0 && (
+          <WhatCustomersSay
+            reviews={business.googleReviews}
+            businessName={business.name}
+            displayRating={displayRating}
+          />
+        )}
+
+        <BusinessHoursTable business={business} />
+
+        <BusinessContactSection
+          business={business}
+          displayAddress={displayAddress}
+          socialLinks={business.social}
+          hasSocial={socialLinks.length > 0}
+        />
 
         <BusinessGallery business={business} />
-
-        <section className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div className="rounded border border-[#e0e0e0] bg-white p-5 shadow-sm">
-            <h2 className="text-base font-bold text-[#1274c0]">Contact Details</h2>
-            <ul className="mt-3 space-y-3 text-sm">
-              <li>
-                <span className="text-xs font-medium uppercase text-[#999]">Phone</span>
-                <a href={`tel:${business.phone}`} className="mt-0.5 block font-semibold text-[#25a244] hover:underline">
-                  {business.phone}
-                </a>
-              </li>
-              {business.email && (
-                <li>
-                  <span className="text-xs font-medium uppercase text-[#999]">Email</span>
-                  <a href={`mailto:${business.email}`} className="mt-0.5 block font-semibold text-[#1274c0] hover:underline">
-                    {business.email}
-                  </a>
-                </li>
-              )}
-              {business.address && (
-                <li>
-                  <span className="text-xs font-medium uppercase text-[#999]">Address</span>
-                  <span className="mt-0.5 block text-[#333]">{displayAddress}</span>
-                </li>
-              )}
-              {!business.address && (
-                <li>
-                  <span className="text-xs font-medium uppercase text-[#999]">Location</span>
-                  <span className="mt-0.5 block text-[#333]">{displayAddress}</span>
-                </li>
-              )}
-            </ul>
-          </div>
-
-          {socialLinks.length > 0 && (
-            <div className="rounded border border-[#e0e0e0] bg-white p-5 shadow-sm">
-              <h2 className="text-base font-bold text-[#1274c0]">Follow Us</h2>
-              <SocialIconLinks social={business.social} className="mt-4" />
-            </div>
-          )}
-        </section>
 
         {reviews.length > 0 && reviewSummary && (
           <div className="mt-4">
@@ -189,7 +146,12 @@ export default async function BusinessPage({ params }: PageProps) {
           </div>
         )}
 
-        <WriteReviewForm businessId={business.id} businessName={business.name} />
+        <WriteReviewForm
+          businessId={business.id}
+          businessName={business.name}
+          businessCity={business.city}
+          businessLogo={business.logo}
+        />
       </div>
     </div>
   );

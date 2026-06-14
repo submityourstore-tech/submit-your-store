@@ -4,6 +4,7 @@ import { BusinessAddress } from "./BusinessAddress";
 import { BusinessAvatar } from "./BusinessMedia";
 import { RatingBadge } from "./RatingBadge";
 import { SocialIconLinks } from "./SocialIcons";
+import { formatRatingCount, getDisplayRating } from "@/lib/display-rating";
 
 type ReviewSummary = { average: number; count: number };
 
@@ -14,6 +15,7 @@ type BusinessCardProps = {
 };
 
 export function BusinessCard({ business, layout = "list", reviewSummary }: BusinessCardProps) {
+  const displayRating = getDisplayRating(business, reviewSummary ?? null);
 
   if (layout === "grid") {
     return (
@@ -24,9 +26,13 @@ export function BusinessCard({ business, layout = "list", reviewSummary }: Busin
             {business.name}
           </Link>
         </h2>
-        {reviewSummary && (
+        {displayRating && (
           <div className="mt-2">
-            <RatingBadge rating={reviewSummary.average} count={reviewSummary.count} />
+            <RatingBadge
+              rating={displayRating.average}
+              count={displayRating.count}
+              countLabel={`${formatRatingCount(displayRating.count)} Ratings`}
+            />
           </div>
         )}
         <BusinessAddress business={business} className="mt-2 text-[#717171]" />
@@ -45,8 +51,12 @@ export function BusinessCard({ business, layout = "list", reviewSummary }: Busin
                 {business.name}
               </Link>
             </h2>
-            {reviewSummary && (
-              <RatingBadge rating={reviewSummary.average} count={reviewSummary.count} />
+            {displayRating && (
+              <RatingBadge
+                rating={displayRating.average}
+                count={displayRating.count}
+                countLabel={`${formatRatingCount(displayRating.count)} Ratings`}
+              />
             )}
           </div>
 

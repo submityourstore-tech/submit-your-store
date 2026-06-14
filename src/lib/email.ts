@@ -76,6 +76,57 @@ export async function sendVerificationEmail({
   }
 }
 
+export async function sendReviewOtpEmail(params: {
+  to: string;
+  code: string;
+  name: string;
+}): Promise<EmailDeliveryResult> {
+  const from = process.env.LISTING_EMAIL_FROM ?? "Submit Your Store <onboarding@resend.dev>";
+  const subject = "Your verification code — Submit Your Store";
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">
+      <h2 style="color:#1274c0">Submit Your Store</h2>
+      <p>Hi ${params.name},</p>
+      <p>Enter this code to verify your email and publish your review:</p>
+      <p style="font-size:28px;font-weight:bold;letter-spacing:4px;color:#111">${params.code}</p>
+      <p style="color:#717171;font-size:14px">This code expires in 15 minutes.</p>
+    </div>
+  `;
+
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  if (!apiKey) {
+    console.info(`[dev] Review OTP to ${params.to}: ${params.code}`);
+    return { ok: true, delivery: "dev", devCode: params.code };
+  }
+
+  try {
+    const res = await fetch(RESEND_API, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ from, to: [params.to], subject, html }),
+    });
+
+    if (!res.ok) {
+      let detail = "Email provider rejected the request.";
+      try {
+        const errBody = (await res.json()) as { message?: string };
+        if (errBody.message) detail = errBody.message;
+      } catch {
+        detail = await res.text();
+      }
+      return { ok: false, delivery: "failed", error: detail };
+    }
+
+    return { ok: true, delivery: "email" };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Email send failed.";
+    return { ok: false, delivery: "failed", error: message };
+  }
+}
+
 export async function sendManageAccessEmail(params: {
   to: string;
   businessName: string;

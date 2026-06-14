@@ -98,3 +98,9 @@ a {
   background: var(--jd-green);
   color: #fff;
 }
+
+.jd-rating-pill {
+  background: #fff3e6;
+  color: #ff6c00;
+  border: 1px solid #ffd9b3;
+}

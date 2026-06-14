@@ -13,7 +13,9 @@
     "import:batch2": "python scripts/import_batch2.py",
     "images:batch1": "python scripts/update_batch1_images.py",
     "logos:backfill": "python scripts/backfill_logos.py",
-    "brand:icons": "node scripts/generate-brand-icons.mjs"
+    "brand:icons": "node scripts/generate-brand-icons.mjs",
+    "blog:images": "node scripts/compress-blog-images.mjs",
+    "faqs:import": "python scripts/import_hvac_faqs.py"
   },
   "dependencies": {
     "next": "^15.3.3",

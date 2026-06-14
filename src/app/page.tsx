@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { BusinessCard } from "@/components/BusinessCard";
+import { HomeBlogSection } from "@/components/HomeBlogSection";
+import { HomeFaqSection } from "@/components/HomeFaqSection";
 import { LocationBrowsePanel } from "@/components/LocationBrowsePanel";
 import { SearchHero } from "@/components/SearchHero";
 import { SidePromoTabs } from "@/components/SidePromoTabs";
@@ -93,6 +95,9 @@ export default function HomePage() {
           </div>
         </section>
       )}
+
+      <HomeBlogSection />
+      <HomeFaqSection />
 
       <section className="mx-auto max-w-6xl px-4 py-8">
         <div className="rounded border border-[#e0e0e0] bg-white p-6 text-center shadow-sm">

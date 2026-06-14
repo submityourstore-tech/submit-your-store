@@ -113,10 +113,20 @@ export function isValidForVertical(
 }
 
 export function getVerticalPath(verticalSlug: string): string {
-  if (verticalSlug === LEGACY_HVAC_VERTICAL || verticalSlug === "home-services") {
-    return `/${LEGACY_HVAC_VERTICAL}/texas`;
-  }
   return `/${verticalSlug}/texas`;
+}
+
+export function getVerticalCityPath(verticalSlug: string, locationSlug: string): string {
+  return `/${verticalSlug}/${locationSlug}`;
+}
+
+export function resolveBusinessBrowseVertical(
+  business: Pick<Business, "vertical" | "categorySlug" | "status">,
+): string {
+  if (matchesVerticalFilter(business, LEGACY_HVAC_VERTICAL)) {
+    return LEGACY_HVAC_VERTICAL;
+  }
+  return getBusinessVertical(business);
 }
 
 export function getSubcategoryPath(verticalSlug: string, categorySlug: string): string {

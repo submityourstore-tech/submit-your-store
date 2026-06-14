@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { getBusinessById } from "@/lib/businesses";
 import { publishNewListing } from "@/lib/businesses-write";
-import { toLocationSlug } from "@/lib/location-utils";
+import { revalidateBusinessListingPaths } from "@/lib/revalidate-paths";
 import { hashValue } from "@/lib/gbp";
 import { sendManageAccessEmail } from "@/lib/email";
 import {
@@ -38,9 +38,7 @@ export async function POST(request: Request) {
   if (record.type === "new" && record.payload) {
     const business = publishNewListing(record.payload);
 
-    revalidatePath("/");
-    revalidatePath("/hvac/texas");
-    revalidatePath(`/hvac/${toLocationSlug(business.city, business.state)}`);
+    revalidateBusinessListingPaths(business);
     revalidatePath(`/business/${business.id}`);
 
     return NextResponse.json({

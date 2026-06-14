@@ -43,6 +43,7 @@ export function HvacListing({
   groupByCity = false,
   vertical = "hvac",
 }: HvacListingProps) {
+  const urlVertical = basePath.split("/").filter(Boolean)[0] ?? vertical;
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -304,7 +305,7 @@ export function HvacListing({
                     </span>
                   </h2>
                   <Link
-                    href={`/hvac/${group.slug}`}
+                    href={`/${urlVertical}/${group.slug}`}
                     className="text-sm font-semibold text-[#1274c0] hover:underline"
                   >
                     View all in {group.city} →

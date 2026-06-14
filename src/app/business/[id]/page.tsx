@@ -9,18 +9,24 @@ import { SiteReviews } from "@/components/SiteReviews";
 import { WriteReviewForm } from "@/components/WriteReviewForm";
 import { SocialIconLinks } from "@/components/SocialIcons";
 import { getBusinessById, getPublicBusinessList } from "@/lib/businesses";
-import { isActiveBusiness, isValidForVertical } from "@/lib/categories-config";
+import {
+  getVerticalPath,
+  isActiveBusiness,
+  matchesVerticalFilter,
+  resolveBusinessBrowseVertical,
+} from "@/lib/categories-config";
 import { getReviewSummary, getReviewsForBusiness } from "@/lib/reviews.server";
 import { getValidSocialLinks } from "@/lib/social";
 import { formatDisplayAddress } from "@/lib/address";
 import { getLocationFromBusiness, getStateLabel } from "@/lib/locations";
+import { getActiveVerticalBrowse, verticalBreadcrumbLabel } from "@/lib/vertical-pages.server";
 
 type PageProps = {
   params: Promise<{ id: string }>;
 };
 
 export async function generateStaticParams() {
-  return getPublicBusinessList({ vertical: "hvac" }).map((b) => ({ id: b.id }));
+  return getPublicBusinessList().map((b) => ({ id: b.id }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -37,7 +43,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function BusinessPage({ params }: PageProps) {
   const { id } = await params;
   const business = getBusinessById(id);
-  if (!business || !isActiveBusiness(business) || !isValidForVertical(business, "hvac")) {
+  const browseVertical = business ? resolveBusinessBrowseVertical(business) : null;
+  if (
+    !business ||
+    !isActiveBusiness(business) ||
+    !browseVertical ||
+    !getActiveVerticalBrowse(browseVertical) ||
+    !matchesVerticalFilter(business, browseVertical)
+  ) {
     notFound();
   }
 
@@ -47,6 +60,8 @@ export default async function BusinessPage({ params }: PageProps) {
   const displayAddress = formatDisplayAddress(business);
   const location = getLocationFromBusiness(business);
   const stateLabel = getStateLabel(business.state);
+  const verticalLabel = verticalBreadcrumbLabel(browseVertical);
+  const verticalHref = getVerticalPath(browseVertical);
 
   return (
     <div className="bg-white">
@@ -57,8 +72,8 @@ export default async function BusinessPage({ params }: PageProps) {
           <Breadcrumbs
             items={[
               { label: "Home", href: "/" },
-              { label: "HVAC", href: "/hvac/texas" },
-              { label: stateLabel, href: "/hvac/texas" },
+              { label: verticalLabel, href: verticalHref },
+              { label: stateLabel, href: verticalHref },
               { label: location.label, href: location.href },
               { label: business.name },
             ]}

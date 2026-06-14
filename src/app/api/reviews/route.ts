@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { getBusinessById } from "@/lib/businesses";
+import { revalidateBusinessListingPaths } from "@/lib/revalidate-paths";
 import { getCurrentUser } from "@/lib/user-auth.server";
 import { getReviewSummary } from "@/lib/reviews.server";
 import { addReview } from "@/lib/reviews-write";
@@ -39,7 +40,8 @@ export async function POST(request: Request) {
     if (!businessId) {
       return NextResponse.json({ error: "Business ID is required." }, { status: 400 });
     }
-    if (!getBusinessById(businessId)) {
+    const business = getBusinessById(businessId);
+    if (!business) {
       return NextResponse.json({ error: "Business not found." }, { status: 404 });
     }
     if (typeof rating !== "number" || !Number.isInteger(rating) || rating < 1 || rating > 5) {
@@ -58,10 +60,7 @@ export async function POST(request: Request) {
     });
 
     revalidatePath(`/business/${businessId}`);
-    revalidatePath("/hvac/texas");
-    revalidatePath("/hvac/dallas-tx");
-    revalidatePath("/hvac/houston-tx");
-    revalidatePath("/");
+    revalidateBusinessListingPaths(business);
 
     const summary = getReviewSummary(businessId);
 

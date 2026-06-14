@@ -6,6 +6,7 @@ import {
   parseLocationSlug,
   toLocationSlug,
 } from "@/lib/location-utils";
+import { getVerticalCityPath, getVerticalPath, resolveBusinessBrowseVertical } from "@/lib/categories-config";
 
 export type LocationStat = {
   city: string;
@@ -52,15 +53,16 @@ export function getBusinessesByState(state: string, vertical = "hvac"): Business
   return getPublicBusinesses({ state, vertical });
 }
 
-export function getLocationFromBusiness(business: Pick<Business, "city" | "state">): {
+export function getLocationFromBusiness(business: Pick<Business, "city" | "state" | "vertical" | "categorySlug" | "status">): {
   label: string;
   slug: string;
   href: string;
 } {
   const slug = toLocationSlug(business.city, business.state);
+  const verticalSlug = resolveBusinessBrowseVertical(business);
   return {
     label: formatLocationLabel(business.city, business.state),
     slug,
-    href: `/hvac/${slug}`,
+    href: getVerticalCityPath(verticalSlug, slug),
   };
 }

@@ -9,12 +9,13 @@ import { getLocationStats } from "@/lib/locations";
 import { getReviewSummary } from "@/lib/reviews.server";
 
 export default function HomePage() {
-  const featured = getFeaturedBusinesses(6);
   const verticals = getActiveVerticalStats();
-  const categories = getActiveSubcategoryStats("hvac");
-  const locations = getLocationStats("TX");
-  const total = getPublicBusinessCount("hvac");
   const primaryVertical = verticals[0];
+  const browseVertical = primaryVertical?.slug ?? "hvac";
+  const featured = getFeaturedBusinesses(6, browseVertical);
+  const categories = getActiveSubcategoryStats(browseVertical);
+  const locations = getLocationStats("TX", browseVertical);
+  const total = getPublicBusinessCount(browseVertical);
   const searchTags = getActiveSearchTags();
 
   return (
@@ -60,7 +61,7 @@ export default function HomePage() {
               {primaryVertical?.label ?? "Local"} businesses across Texas
             </p>
             <div className="mt-4">
-              <LocationBrowse locations={locations} />
+              <LocationBrowse locations={locations} verticalSlug={browseVertical} />
             </div>
           </div>
         </section>

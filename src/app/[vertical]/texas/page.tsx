@@ -1,18 +1,40 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { HvacListing } from "@/components/HvacListing";
 import { LocationBrowse } from "@/components/LocationBrowse";
 import { SidePromoTabs } from "@/components/SidePromoTabs";
+import { getActiveVerticalStats } from "@/lib/categories.server";
+import { getVerticalPath } from "@/lib/categories-config";
 import { getBusinessesByState, getLocationStats } from "@/lib/locations";
-import { getReviewSummary } from "@/lib/reviews.server";
 import type { ReviewSummaryMap } from "@/lib/listing";
+import { getReviewSummary } from "@/lib/reviews.server";
+import {
+  getActiveVerticalBrowse,
+  verticalBreadcrumbLabel,
+  verticalPageDescription,
+  verticalPageTitle,
+} from "@/lib/vertical-pages.server";
 
-export const metadata: Metadata = {
-  title: "HVAC Contractors in Texas",
-  description:
-    "Browse HVAC contractors across Texas by city. Dallas, Houston, and more on Submit Your Store.",
+type PageProps = {
+  params: Promise<{ vertical: string }>;
 };
+
+export function generateStaticParams() {
+  return getActiveVerticalStats().map((vertical) => ({ vertical: vertical.slug }));
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { vertical } = await params;
+  const meta = getActiveVerticalBrowse(vertical);
+  if (!meta) return { title: "Category not found" };
+
+  return {
+    title: verticalPageTitle(vertical, "Texas"),
+    description: verticalPageDescription(vertical, "Texas"),
+  };
+}
 
 function buildReviewSummaries(businesses: { id: string }[]): ReviewSummaryMap {
   const map: ReviewSummaryMap = {};
@@ -23,10 +45,16 @@ function buildReviewSummaries(businesses: { id: string }[]): ReviewSummaryMap {
   return map;
 }
 
-export default function HvacTexasPage() {
-  const businesses = getBusinessesByState("TX", "hvac");
-  const locations = getLocationStats("TX", "hvac");
+export default async function VerticalTexasPage({ params }: PageProps) {
+  const { vertical } = await params;
+  const meta = getActiveVerticalBrowse(vertical);
+  if (!meta) notFound();
+
+  const businesses = getBusinessesByState("TX", vertical);
+  const locations = getLocationStats("TX", vertical);
   const reviewSummaries = buildReviewSummaries(businesses);
+  const basePath = getVerticalPath(vertical);
+  const breadcrumbLabel = verticalBreadcrumbLabel(vertical);
 
   return (
     <div className="bg-white">
@@ -37,12 +65,12 @@ export default function HvacTexasPage() {
           <Breadcrumbs
             items={[
               { label: "Home", href: "/" },
-              { label: "HVAC", href: "/hvac/texas" },
+              { label: breadcrumbLabel, href: basePath },
               { label: "Texas" },
             ]}
           />
           <h1 className="mt-3 text-2xl font-bold text-[#111] sm:text-3xl">
-            HVAC Contractors in <span className="text-[#1274c0]">Texas</span>
+            {breadcrumbLabel} in <span className="text-[#1274c0]">Texas</span>
           </h1>
           <p className="mt-1 pb-4 text-sm text-[#717171]">
             {businesses.length} businesses across {locations.length} cities
@@ -54,7 +82,7 @@ export default function HvacTexasPage() {
         <div className="mx-auto max-w-6xl px-4 py-5">
           <h2 className="text-base font-bold text-[#111]">Browse by city</h2>
           <div className="mt-3">
-            <LocationBrowse locations={locations} />
+            <LocationBrowse locations={locations} verticalSlug={vertical} />
           </div>
         </div>
       </div>
@@ -70,8 +98,9 @@ export default function HvacTexasPage() {
           businesses={businesses}
           reviewSummaries={reviewSummaries}
           locationLabel="Texas"
-          basePath="/hvac/texas"
+          basePath={basePath}
           groupByCity
+          vertical={vertical}
         />
       </Suspense>
     </div>

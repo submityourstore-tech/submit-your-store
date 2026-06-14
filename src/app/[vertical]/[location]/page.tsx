@@ -4,6 +4,8 @@ import { Suspense } from "react";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { HvacListing } from "@/components/HvacListing";
 import { SidePromoTabs } from "@/components/SidePromoTabs";
+import { getActiveVerticalStats } from "@/lib/categories.server";
+import { getVerticalCityPath, getVerticalPath } from "@/lib/categories-config";
 import {
   formatLocationLabel,
   getBusinessesByLocation,
@@ -11,26 +13,39 @@ import {
   getStateLabel,
   parseLocationSlug,
 } from "@/lib/locations";
-import { getReviewSummary } from "@/lib/reviews.server";
 import type { ReviewSummaryMap } from "@/lib/listing";
+import { getReviewSummary } from "@/lib/reviews.server";
+import {
+  getActiveVerticalBrowse,
+  verticalBreadcrumbLabel,
+  verticalPageDescription,
+  verticalPageTitle,
+} from "@/lib/vertical-pages.server";
 
 type PageProps = {
-  params: Promise<{ location: string }>;
+  params: Promise<{ vertical: string; location: string }>;
 };
 
-export async function generateStaticParams() {
-  return getLocationStats().map((loc) => ({ location: loc.slug }));
+export function generateStaticParams() {
+  const params: { vertical: string; location: string }[] = [];
+  for (const vertical of getActiveVerticalStats()) {
+    for (const loc of getLocationStats("TX", vertical.slug)) {
+      params.push({ vertical: vertical.slug, location: loc.slug });
+    }
+  }
+  return params;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { location } = await params;
+  const { vertical, location } = await params;
+  const meta = getActiveVerticalBrowse(vertical);
   const parsed = parseLocationSlug(location);
-  if (!parsed) return { title: "Location not found" };
+  if (!meta || !parsed) return { title: "Location not found" };
 
   const label = formatLocationLabel(parsed.city, parsed.state);
   return {
-    title: `HVAC Contractors in ${label}`,
-    description: `Browse HVAC and AC contractors in ${label} on Submit Your Store.`,
+    title: verticalPageTitle(vertical, label),
+    description: verticalPageDescription(vertical, label),
   };
 }
 
@@ -43,17 +58,19 @@ function buildReviewSummaries(businesses: { id: string }[]): ReviewSummaryMap {
   return map;
 }
 
-export default async function HvacCityPage({ params }: PageProps) {
-  const { location } = await params;
+export default async function VerticalCityPage({ params }: PageProps) {
+  const { vertical, location } = await params;
+  const meta = getActiveVerticalBrowse(vertical);
   const parsed = parseLocationSlug(location);
-  if (!parsed) notFound();
+  if (!meta || !parsed) notFound();
 
-  const businesses = getBusinessesByLocation(parsed.city, parsed.state, "hvac");
+  const businesses = getBusinessesByLocation(parsed.city, parsed.state, vertical);
   if (businesses.length === 0) notFound();
 
   const label = formatLocationLabel(parsed.city, parsed.state);
   const reviewSummaries = buildReviewSummaries(businesses);
-  const basePath = `/hvac/${location}`;
+  const basePath = getVerticalCityPath(vertical, location);
+  const breadcrumbLabel = verticalBreadcrumbLabel(vertical);
 
   return (
     <div className="bg-white">
@@ -64,13 +81,13 @@ export default async function HvacCityPage({ params }: PageProps) {
           <Breadcrumbs
             items={[
               { label: "Home", href: "/" },
-              { label: "HVAC", href: "/hvac/texas" },
-              { label: getStateLabel(parsed.state), href: "/hvac/texas" },
+              { label: breadcrumbLabel, href: getVerticalPath(vertical) },
+              { label: getStateLabel(parsed.state), href: getVerticalPath(vertical) },
               { label },
             ]}
           />
           <h1 className="mt-3 text-2xl font-bold text-[#111] sm:text-3xl">
-            HVAC Contractors in <span className="text-[#1274c0]">{label}</span>
+            {breadcrumbLabel} in <span className="text-[#1274c0]">{label}</span>
           </h1>
           <p className="mt-1 pb-4 text-sm text-[#717171]">
             {businesses.length} businesses · Reviews from Submit Your Store members only
@@ -90,6 +107,7 @@ export default async function HvacCityPage({ params }: PageProps) {
           reviewSummaries={reviewSummaries}
           locationLabel={label}
           basePath={basePath}
+          vertical={vertical}
         />
       </Suspense>
     </div>

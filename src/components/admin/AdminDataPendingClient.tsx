@@ -3,22 +3,25 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
-type PendingBusiness = {
+type VerificationBusiness = {
   id: string;
   name: string;
   gbpUrl: string | null;
   city: string;
   state: string;
+  hasData: boolean;
+  verifiedAt: string | null;
 };
 
-type PendingFieldSummary = {
+type VerificationField = {
   id: string;
   label: string;
   description: string;
   csvHeader: string;
-  copyHeader: string;
-  pendingCount: number;
-  pendingBusinesses: PendingBusiness[];
+  verifiedCount: number;
+  unverifiedCount: number;
+  pendingDataCount: number;
+  unverifiedBusinesses: VerificationBusiness[];
 };
 
 type BulkResult = {
@@ -32,9 +35,12 @@ export function AdminDataPendingClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [totalBusinesses, setTotalBusinesses] = useState(0);
-  const [fields, setFields] = useState<PendingFieldSummary[]>([]);
+  const [totalVerified, setTotalVerified] = useState(0);
+  const [totalUnverified, setTotalUnverified] = useState(0);
+  const [fields, setFields] = useState<VerificationField[]>([]);
+  const [batchSizes, setBatchSizes] = useState<Record<string, number>>({});
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [copiedFormat, setCopiedFormat] = useState<string | null>(null);
+  const [copiedHeader, setCopiedHeader] = useState<string | null>(null);
   const [uploadingField, setUploadingField] = useState<string | null>(null);
   const [uploadResults, setUploadResults] = useState<Record<string, BulkResult[]>>({});
 
@@ -42,17 +48,21 @@ export function AdminDataPendingClient() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/admin/data-pending");
+      const res = await fetch("/api/admin/data-pending", { cache: "no-store" });
       const data = (await res.json()) as {
         error?: string;
         totalBusinesses?: number;
-        fields?: PendingFieldSummary[];
+        totalVerified?: number;
+        totalUnverified?: number;
+        fields?: VerificationField[];
       };
       if (!res.ok) {
         setError(data.error ?? "Failed to load pending data.");
         return;
       }
       setTotalBusinesses(data.totalBusinesses ?? 0);
+      setTotalVerified(data.totalVerified ?? 0);
+      setTotalUnverified(data.totalUnverified ?? 0);
       setFields(data.fields ?? []);
     } catch {
       setError("Network error loading pending data.");
@@ -65,31 +75,45 @@ export function AdminDataPendingClient() {
     void load();
   }, [load]);
 
-  async function copyText(text: string, fieldId: string, kind: "gbp" | "format") {
+  function getBatchSize(fieldId: string): number {
+    return batchSizes[fieldId] ?? 10;
+  }
+
+  function buildBatchCopy(field: VerificationField): string {
+    const batchSize = getBatchSize(field.id);
+    const batch = field.unverifiedBusinesses.slice(0, batchSize);
+
+    if (field.id === "gbp_url") {
+      return ["id\tbusiness_name", ...batch.map((b) => `${b.id}\t${b.name}`)].join("\n");
+    }
+
+    const urls = batch.map((b) => b.gbpUrl?.trim()).filter(Boolean) as string[];
+    return urls.join("\n");
+  }
+
+  async function copyBatch(field: VerificationField) {
+    const text = buildBatchCopy(field);
+    if (!text.trim()) {
+      setError("Nothing to copy — check GBP URLs exist for this batch.");
+      return;
+    }
     try {
       await navigator.clipboard.writeText(text);
-      if (kind === "gbp") {
-        setCopiedField(fieldId);
-        setTimeout(() => setCopiedField(null), 2000);
-      } else {
-        setCopiedFormat(fieldId);
-        setTimeout(() => setCopiedFormat(null), 2000);
-      }
+      setCopiedField(field.id);
+      setTimeout(() => setCopiedField(null), 2000);
     } catch {
       setError("Could not copy to clipboard.");
     }
   }
 
-  function buildGbpCopyList(field: PendingFieldSummary): string {
-    if (field.id === "gbp_url") {
-      return [field.copyHeader, ...field.pendingBusinesses.map((b) => `${b.id}\t${b.name}`)].join(
-        "\n",
-      );
+  async function copyHeader(field: VerificationField) {
+    try {
+      await navigator.clipboard.writeText(field.csvHeader);
+      setCopiedHeader(field.id);
+      setTimeout(() => setCopiedHeader(null), 2000);
+    } catch {
+      setError("Could not copy to clipboard.");
     }
-    const urls = field.pendingBusinesses
-      .map((b) => b.gbpUrl?.trim())
-      .filter(Boolean) as string[];
-    return urls.join("\n");
   }
 
   async function handleUpload(fieldId: string, file: File | null) {
@@ -103,8 +127,6 @@ export function AdminDataPendingClient() {
       const res = await fetch("/api/admin/businesses/bulk-update/csv", { method: "POST", body });
       const data = (await res.json()) as {
         error?: string;
-        updated?: number;
-        failed?: number;
         results?: BulkResult[];
       };
       if (!res.ok) {
@@ -124,8 +146,6 @@ export function AdminDataPendingClient() {
     return <p className="text-sm text-[#717171]">Loading pending data…</p>;
   }
 
-  const totalPending = fields.reduce((sum, f) => sum + f.pendingCount, 0);
-
   return (
     <div className="space-y-6">
       {error && (
@@ -138,30 +158,28 @@ export function AdminDataPendingClient() {
           <p className="mt-1 text-2xl font-bold text-[#111]">{totalBusinesses}</p>
         </div>
         <div className="rounded border bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#717171]">Pending gaps</p>
-          <p className="mt-1 text-2xl font-bold text-[#b45309]">{totalPending}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#717171]">Field verifications done</p>
+          <p className="mt-1 text-2xl font-bold text-[#25a244]">{totalVerified}</p>
         </div>
         <div className="rounded border bg-white p-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#717171]">Field types</p>
-          <p className="mt-1 text-2xl font-bold text-[#111]">{fields.length}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#717171]">Still unverified</p>
+          <p className="mt-1 text-2xl font-bold text-[#b45309]">{totalUnverified}</p>
         </div>
       </div>
 
       <p className="text-sm text-[#555]">
-        For each missing field: copy GBP URLs → scrape in Google Sheets → paste data into the CSV
-        format → upload here. Updates match by <strong>gbp_url</strong> (or <strong>id</strong> for
-        GBP URL missing). Use sidebar <strong>Verify data</strong> and <strong>Data issues</strong> for
-        batch verification and problem fixes.
+        Har field alag verify hoti hai. Batch size set karo (e.g. 10) → <strong>Copy GBP URLs</strong> ya id+name →
+        Google Sheets mein scrape karo → CSV upload karo. Successful upload par field verified mark ho jati hai with
+        date — verified listings dubara queue mein nahi aati. Use <strong>Data issues</strong> for 404 / mismatch fixes.
       </p>
 
       <div className="space-y-4">
         {fields.map((field) => {
-          const gbpCopyCount =
-            field.id === "gbp_url"
-              ? field.pendingCount
-              : field.pendingBusinesses.filter((b) => b.gbpUrl?.trim()).length;
+          const batchSize = getBatchSize(field.id);
+          const batchCount = Math.min(batchSize, field.unverifiedCount);
           const results = uploadResults[field.id] ?? [];
           const updatedCount = results.filter((r) => r.ok).length;
+          const allVerified = field.unverifiedCount === 0;
 
           return (
             <section
@@ -172,63 +190,93 @@ export function AdminDataPendingClient() {
                 <div>
                   <h2 className="text-lg font-bold text-[#111]">
                     {field.label}
+                    <span className="ml-2 rounded-full bg-[#f0fdf4] px-2.5 py-0.5 text-sm font-semibold text-[#25a244]">
+                      {field.verifiedCount} verified
+                    </span>
                     <span
-                      className={`ml-2 rounded-full px-2.5 py-0.5 text-sm font-semibold ${
-                        field.pendingCount > 0
+                      className={`ml-1 rounded-full px-2.5 py-0.5 text-sm font-semibold ${
+                        field.unverifiedCount > 0
                           ? "bg-[#fffbeb] text-[#b45309]"
                           : "bg-[#f0fdf4] text-[#25a244]"
                       }`}
                     >
-                      {field.pendingCount} pending
+                      {allVerified ? "All done ✓" : `${field.unverifiedCount} unverified`}
                     </span>
                   </h2>
                   <p className="mt-1 text-sm text-[#717171]">{field.description}</p>
+                  {field.pendingDataCount > 0 && (
+                    <p className="mt-1 text-xs text-[#b45309]">
+                      {field.pendingDataCount} of unverified still need data scraped
+                    </p>
+                  )}
                 </div>
               </div>
 
-              {field.pendingCount > 0 && (
-                <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap items-end gap-3">
+                {!allVerified && (
+                  <label className="text-sm">
+                    <span className="font-medium text-[#333]">Batch size</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={batchSize}
+                      onChange={(e) =>
+                        setBatchSizes((prev) => ({
+                          ...prev,
+                          [field.id]: Math.max(1, Number(e.target.value) || 10),
+                        }))
+                      }
+                      className="ml-2 w-20 rounded border px-2 py-1"
+                    />
+                  </label>
+                )}
+                {!allVerified && (
                   <button
                     type="button"
-                    onClick={() => void copyText(buildGbpCopyList(field), field.id, "gbp")}
+                    onClick={() => void copyBatch(field)}
                     className="rounded border border-[#1274c0] bg-[#f0f7fd] px-4 py-2 text-sm font-semibold text-[#1274c0] hover:bg-[#e0eef8]"
                   >
                     {copiedField === field.id
                       ? "Copied!"
                       : field.id === "gbp_url"
-                        ? `Copy ${field.pendingCount} id + name`
-                        : `Copy ${gbpCopyCount} GBP URL${gbpCopyCount === 1 ? "" : "s"}`}
+                        ? `Copy next ${batchCount} id + name`
+                        : `Copy next ${batchCount} GBP URL${batchCount === 1 ? "" : "s"}`}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => void copyText(field.csvHeader, field.id, "format")}
-                    className="rounded border border-[#ccc] bg-white px-4 py-2 text-sm font-medium text-[#333] hover:border-[#1274c0]"
-                  >
-                    {copiedFormat === field.id ? "Format copied!" : "Copy CSV header"}
-                  </button>
-                </div>
-              )}
+                )}
+                <button
+                  type="button"
+                  onClick={() => void copyHeader(field)}
+                  className="rounded border border-[#ccc] bg-white px-4 py-2 text-sm font-medium text-[#333] hover:border-[#1274c0]"
+                >
+                  {copiedHeader === field.id ? "Header copied!" : "Copy CSV header"}
+                </button>
+              </div>
 
               <div className="mt-3 rounded border border-[#eee] bg-[#fafafa] px-3 py-2 font-mono text-xs text-[#555]">
                 {field.csvHeader}
               </div>
 
-              {field.pendingCount > 0 && (
+              {!allVerified && (
                 <>
                   <details className="mt-3">
                     <summary className="cursor-pointer text-sm font-medium text-[#1274c0] hover:underline">
-                      Show {Math.min(field.pendingCount, 20)} pending businesses
-                      {field.pendingCount > 20 ? ` (of ${field.pendingCount})` : ""}
+                      Next {Math.min(batchSize, field.unverifiedCount)} in queue (unverified only)
                     </summary>
                     <ul className="mt-2 max-h-48 overflow-y-auto text-sm text-[#555]">
-                      {field.pendingBusinesses.slice(0, 20).map((b) => (
+                      {field.unverifiedBusinesses.slice(0, batchSize).map((b) => (
                         <li key={b.id} className="border-b border-[#eee] py-1.5">
-                          <Link href={`/admin/edit/${b.id}`} className="font-medium text-[#1274c0] hover:underline">
+                          <Link
+                            href={`/admin/edit/${b.id}`}
+                            className="font-medium text-[#1274c0] hover:underline"
+                          >
                             {b.name}
                           </Link>
                           <span className="text-[#999]"> · {b.city}, {b.state}</span>
-                          {b.gbpUrl && (
-                            <span className="mt-0.5 block truncate text-xs text-[#717171]">{b.gbpUrl}</span>
+                          {b.hasData ? (
+                            <span className="ml-2 text-xs text-[#25a244]">has data</span>
+                          ) : (
+                            <span className="ml-2 text-xs text-[#b45309]">needs data</span>
                           )}
                         </li>
                       ))}
@@ -257,10 +305,16 @@ export function AdminDataPendingClient() {
                 </>
               )}
 
+              {allVerified && (
+                <p className="mt-3 text-sm text-[#25a244]">
+                  ✓ Sab listings is field ke liye verified hain — queue khali hai.
+                </p>
+              )}
+
               {results.length > 0 && (
                 <div className="mt-4 rounded border border-[#e8e8e8] bg-[#fafafa] p-3">
                   <p className="text-sm font-semibold text-[#111]">
-                    Last upload: {updatedCount} updated, {results.length - updatedCount} failed
+                    Last upload: {updatedCount} verified, {results.length - updatedCount} failed
                   </p>
                   <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto text-sm">
                     {results.map((r, i) => (

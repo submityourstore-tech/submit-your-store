@@ -18,7 +18,6 @@ const MAIN_NAV = [
 ] as const;
 
 const DATA_TOOLS_NAV = [
-  { href: "/admin/data-verify", label: "Verify data", icon: "✅" },
   { href: "/admin/data-issues", label: "Data issues", icon: "⚠️" },
 ] as const;
 
@@ -101,9 +100,7 @@ export function AdminShell({ title, description, children }: AdminShellProps) {
               </nav>
             </aside>
 
-            <main className="min-w-0 flex-1 rounded border border-[#c3c4c7] bg-white p-5 shadow-sm">
-              {children}
-            </main>
+            <main className="min-w-0 flex-1">{children}</main>
           </div>
         </div>
       </div>

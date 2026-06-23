@@ -5,7 +5,7 @@ export default function AdminDataPendingPage() {
   return (
     <AdminShell
       title="Data pending"
-      description="See which listings are missing info. Copy GBP URLs, scrape in Google Sheets, and bulk-update each field with CSV."
+      description="Per-field batch workflow — copy GBP URLs, upload scraped CSV, verified listings won't reappear."
     >
       <AdminDataPendingClient />
     </AdminShell>

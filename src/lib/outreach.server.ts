@@ -53,6 +53,7 @@ export type OutreachTrackingStats = {
 
 export type OutreachStats = {
   brevoConfigured: boolean;
+  outreachTablesReady: boolean;
   totalActive: number;
   unclaimedTotal: number;
   unclaimedWithEmail: number;
@@ -116,6 +117,17 @@ export async function saveOutreachTemplate(template: OutreachTemplate): Promise<
       );
     }
     throw new Error(error.message);
+  }
+}
+
+export async function checkOutreachTablesReady(): Promise<boolean> {
+  try {
+    const supabase = createSupabaseAdmin();
+    const { error } = await supabase.from("outreach_settings").select("id").limit(1);
+    if (error && isOutreachTableMissing(error)) return false;
+    return !error;
+  } catch {
+    return false;
   }
 }
 
@@ -190,9 +202,11 @@ export async function getOutreachStats(): Promise<OutreachStats> {
     limit: OUTREACH_QUEUE_LIMIT,
   });
   const logs = await listOutreachLogs(500);
+  const outreachTablesReady = await checkOutreachTablesReady();
 
   return {
     brevoConfigured: Boolean(process.env.BREVO_API_KEY?.trim()),
+    outreachTablesReady,
     totalActive: active.length,
     unclaimedTotal: unclaimed.length,
     unclaimedWithEmail: unclaimedWithEmail.length,
@@ -395,6 +409,17 @@ export async function sendOutreachBatch(options: {
   businessIds?: string[];
   resend?: boolean;
 }): Promise<{ results: SendOutreachResult[]; sent: number; failed: number }> {
+  const tablesReady = await checkOutreachTablesReady();
+  if (!tablesReady) {
+    throw new Error(
+      "Outreach tables not found in Supabase. Run migrations: 20250614210000_create_outreach_tables.sql and 20250614220000_outreach_tracking.sql",
+    );
+  }
+
+  if (!process.env.BREVO_API_KEY?.trim()) {
+    throw new Error("BREVO_API_KEY is not configured in environment variables.");
+  }
+
   const allBusinesses = await readBusinesses();
   const template = await loadOutreachTemplate();
 
@@ -402,10 +427,12 @@ export async function sendOutreachBatch(options: {
   if (options.businessIds?.length) {
     targets = allBusinesses.filter((b) => options.businessIds!.includes(b.id));
   } else {
-    targets = await listOutreachCandidates({
+    const maxCount = options.count ?? OUTREACH_QUEUE_LIMIT;
+    const candidates = await listOutreachCandidates({
       skipContacted: !options.resend,
-      limit: options.count,
+      limit: maxCount,
     });
+    targets = candidates.slice(0, maxCount);
   }
 
   const results: SendOutreachResult[] = [];

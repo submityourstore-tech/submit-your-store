@@ -18,6 +18,7 @@ type TrackingStats = {
 
 type OutreachStats = {
   brevoConfigured: boolean;
+  outreachTablesReady: boolean;
   unclaimedTotal: number;
   unclaimedWithEmail: number;
   alreadyContacted: number;
@@ -274,31 +275,53 @@ export function AdminOutreachClient() {
 
       {!stats?.brevoConfigured && (
         <div className="rounded border border-[#f59e0b] bg-[#fffbeb] px-4 py-3 text-sm text-[#b45309]">
-          <strong>BREVO_API_KEY</strong> is not set. Add it in Vercel environment variables.
+          <strong>BREVO_API_KEY</strong> is not set. Add it in Vercel environment variables for outreach sends.
         </div>
       )}
 
-      {tracking && (
-        <section className="rounded border bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-bold text-[#111]">Email tracking dashboard</h2>
-          <p className="mt-1 text-sm text-[#717171]">
-            Opens, clicks, and bounces update via Brevo webhook. Configure in Brevo → Settings → Webhooks.
-          </p>
-          {webhookUrl && (
-            <p className="mt-2 break-all rounded bg-[#fafafa] px-3 py-2 font-mono text-xs text-[#555]">
-              Webhook URL: {webhookUrl}
-            </p>
-          )}
-          <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            <StatCard label="Sent" value={tracking.sent} />
-            <StatCard label="Delivered" value={tracking.delivered} />
-            <StatCard label="Opened" value={tracking.opened} sub={`${tracking.openRate}%`} accent />
-            <StatCard label="Clicked" value={tracking.clicked} sub={`${tracking.clickRate}%`} accent />
-            <StatCard label="Bounced" value={tracking.bounced} sub={`${tracking.bounceRate}%`} warn />
-            <StatCard label="Failed" value={tracking.failed} warn />
-          </div>
-        </section>
+      {stats && stats.outreachTablesReady === false && (
+        <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <strong>Outreach database tables missing.</strong> Run Supabase migrations{" "}
+          <code className="text-xs">20250614210000_create_outreach_tables.sql</code> and{" "}
+          <code className="text-xs">20250614220000_outreach_tracking.sql</code> in SQL Editor.
+          Sends and tracking will not work until then.
+        </div>
       )}
+
+      <section className="rounded border bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-bold text-[#111]">Email tracking dashboard</h2>
+        <p className="mt-1 text-sm text-[#717171]">
+          Sent, delivered, opened, clicked, bounced — updates via Brevo webhook.
+        </p>
+        {webhookUrl && (
+          <p className="mt-2 break-all rounded bg-[#fafafa] px-3 py-2 font-mono text-xs text-[#555]">
+            Webhook URL: {webhookUrl}
+          </p>
+        )}
+        <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <StatCard label="Sent" value={tracking?.sent ?? 0} />
+          <StatCard label="Delivered" value={tracking?.delivered ?? 0} />
+          <StatCard
+            label="Opened"
+            value={tracking?.opened ?? 0}
+            sub={tracking ? `${tracking.openRate}%` : undefined}
+            accent
+          />
+          <StatCard
+            label="Clicked"
+            value={tracking?.clicked ?? 0}
+            sub={tracking ? `${tracking.clickRate}%` : undefined}
+            accent
+          />
+          <StatCard
+            label="Bounced"
+            value={tracking?.bounced ?? 0}
+            sub={tracking ? `${tracking.bounceRate}%` : undefined}
+            warn
+          />
+          <StatCard label="Failed" value={tracking?.failed ?? 0} warn />
+        </div>
+      </section>
 
       {stats && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -333,7 +356,7 @@ export function AdminOutreachClient() {
           </label>
           <button
             type="button"
-            disabled={sending || (!stats?.readyToSend && !resend)}
+            disabled={sending || !stats?.brevoConfigured || stats?.outreachTablesReady === false}
             onClick={() => void sendBatch()}
             className="jd-btn-primary rounded px-5 py-2.5 text-sm font-semibold disabled:opacity-60"
           >
@@ -476,25 +499,34 @@ export function AdminOutreachClient() {
         </div>
       </section>
 
-      {logs.length > 0 && (
-        <section className="rounded border bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-bold text-[#111]">All sends &amp; tracking events</h2>
-          <div className="mt-3 overflow-x-auto">
-            <table className="w-full min-w-[900px] text-left text-sm">
-              <thead>
-                <tr className="border-b text-xs uppercase text-[#717171]">
-                  <th className="py-2 pr-3">Business</th>
-                  <th className="py-2 pr-3">Email</th>
-                  <th className="py-2 pr-3">Status</th>
-                  <th className="py-2 pr-3">Delivery</th>
-                  <th className="py-2 pr-3">Opens</th>
-                  <th className="py-2 pr-3">Clicks</th>
-                  <th className="py-2 pr-3">Bounced</th>
-                  <th className="py-2">Sent</th>
+      <section className="rounded border bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-bold text-[#111]">All sends &amp; tracking events</h2>
+        <p className="mt-1 text-sm text-[#717171]">
+          Kis business ko mail gayi, deliver hui, open/click hua — sab yahan dikhega.
+        </p>
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-[900px] text-left text-sm">
+            <thead>
+              <tr className="border-b text-xs uppercase text-[#717171]">
+                <th className="py-2 pr-3">Business</th>
+                <th className="py-2 pr-3">Email</th>
+                <th className="py-2 pr-3">Status</th>
+                <th className="py-2 pr-3">Delivery</th>
+                <th className="py-2 pr-3">Opens</th>
+                <th className="py-2 pr-3">Clicks</th>
+                <th className="py-2 pr-3">Bounced</th>
+                <th className="py-2">Sent</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-8 text-center text-[#717171]">
+                    Abhi koi outreach email send nahi hui. Template save karo aur Send button use karo.
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {logs.map((log) => (
+              ) : (
+                logs.map((log) => (
                   <tr key={log.id} className="border-b border-[#eee]">
                     <td className="py-2 pr-3 font-medium">{log.business_name}</td>
                     <td className="py-2 pr-3 text-[#555]">{log.business_email}</td>
@@ -532,12 +564,12 @@ export function AdminOutreachClient() {
                       {new Date(log.sent_at).toLocaleString()}
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }

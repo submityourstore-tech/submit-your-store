@@ -1,3 +1,5 @@
+import { sendBrevoEmail } from "@/lib/brevo.server";
+
 const RESEND_API = "https://api.resend.com/emails";
 
 type SendVerificationEmailParams = {
@@ -48,13 +50,78 @@ export function emailDeliveryWarning(detail?: string): string {
   return "We couldn't email the verification link, but you can verify on the next screen.";
 }
 
+async function sendViaResend(params: {
+  to: string;
+  subject: string;
+  html: string;
+}): Promise<{ ok: true } | { ok: false; detail: string }> {
+  const from = process.env.LISTING_EMAIL_FROM ?? "Submit Your Store <onboarding@resend.dev>";
+  const keyResult = resolveResendKey();
+  if (!keyResult.ok) {
+    if (keyResult.delivery === "dev") {
+      return { ok: false, detail: "__dev__" };
+    }
+    return { ok: false, detail: keyResult.error ?? "Resend not configured." };
+  }
+
+  try {
+    const res = await fetch(RESEND_API, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${keyResult.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ from, to: [params.to], subject: params.subject, html: params.html }),
+    });
+
+    if (!res.ok) {
+      let detail = "Email provider rejected the request.";
+      try {
+        const errBody = (await res.json()) as { message?: string };
+        if (errBody.message) detail = errBody.message;
+      } catch {
+        detail = await res.text();
+      }
+      return { ok: false, detail };
+    }
+
+    return { ok: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Email send failed.";
+    return { ok: false, detail: message };
+  }
+}
+
+async function sendTransactionalEmail(params: {
+  to: string;
+  subject: string;
+  html: string;
+  tags?: string[];
+}): Promise<EmailDeliveryResult> {
+  const resend = await sendViaResend(params);
+  if (resend.ok) {
+    return { ok: true, delivery: "email" };
+  }
+
+  const brevo = await sendBrevoEmail({
+    to: params.to,
+    subject: params.subject,
+    html: params.html,
+    tags: params.tags ?? ["transactional"],
+  });
+  if (brevo.ok) {
+    return { ok: true, delivery: "email" };
+  }
+
+  return { ok: false, delivery: "failed", error: brevo.error ?? resend.detail };
+}
+
 export async function sendVerificationEmail({
   to,
   verifyUrl,
   businessName,
   purpose,
 }: SendVerificationEmailParams): Promise<EmailDeliveryResult> {
-  const from = process.env.LISTING_EMAIL_FROM ?? "Submit Your Store <onboarding@resend.dev>";
   const subject =
     purpose === "claim"
       ? `Verify ownership of ${businessName} on Submit Your Store`
@@ -81,42 +148,22 @@ export async function sendVerificationEmail({
   `;
 
   const keyResult = resolveResendKey();
-  if (!keyResult.ok) {
-    if (keyResult.delivery === "dev") {
-      console.info(`[dev] Verification email to ${to}: ${verifyUrl}`);
-      return { ok: true, delivery: "dev", devVerifyUrl: verifyUrl };
-    }
+  if (!keyResult.ok && keyResult.delivery === "dev") {
+    console.info(`[dev] Verification email to ${to}: ${verifyUrl}`);
+    return { ok: true, delivery: "dev", devVerifyUrl: verifyUrl };
+  }
+
+  const sent = await sendTransactionalEmail({ to, subject, html, tags: ["listing-verify"] });
+  if (sent.ok) {
+    return sent;
+  }
+
+  if (!keyResult.ok && keyResult.delivery === "failed" && !process.env.BREVO_API_KEY?.trim()) {
     return { ok: false, delivery: "failed", error: keyResult.error };
   }
 
-  try {
-    const res = await fetch(RESEND_API, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${keyResult.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ from, to: [to], subject, html }),
-    });
-
-    if (!res.ok) {
-      let detail = "Email provider rejected the request.";
-      try {
-        const errBody = (await res.json()) as { message?: string };
-        if (errBody.message) detail = errBody.message;
-      } catch {
-        detail = await res.text();
-      }
-      console.error("Email send failed", detail);
-      return { ok: false, delivery: "failed", error: emailDeliveryWarning(detail) };
-    }
-
-    return { ok: true, delivery: "email" };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Email send failed.";
-    console.error("Email send error", message);
-    return { ok: false, delivery: "failed", error: message };
-  }
+  console.error("Email send failed", sent.error);
+  return { ok: false, delivery: "failed", error: emailDeliveryWarning(sent.error) };
 }
 
 export async function sendReviewOtpEmail(params: {
@@ -124,7 +171,6 @@ export async function sendReviewOtpEmail(params: {
   code: string;
   name: string;
 }): Promise<EmailDeliveryResult> {
-  const from = process.env.LISTING_EMAIL_FROM ?? "Submit Your Store <onboarding@resend.dev>";
   const subject = "Your verification code — Submit Your Store";
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">
@@ -137,40 +183,24 @@ export async function sendReviewOtpEmail(params: {
   `;
 
   const keyResult = resolveResendKey();
-  if (!keyResult.ok) {
-    if (keyResult.delivery === "dev") {
-      console.info(`[dev] Review OTP to ${params.to}: ${params.code}`);
-      return { ok: true, delivery: "dev", devCode: params.code };
-    }
+  if (!keyResult.ok && keyResult.delivery === "dev") {
+    console.info(`[dev] Review OTP to ${params.to}: ${params.code}`);
+    return { ok: true, delivery: "dev", devCode: params.code };
+  }
+
+  const sent = await sendTransactionalEmail({
+    to: params.to,
+    subject,
+    html,
+    tags: ["review-otp"],
+  });
+  if (sent.ok) return sent;
+
+  if (!keyResult.ok && keyResult.delivery === "failed" && !process.env.BREVO_API_KEY?.trim()) {
     return { ok: false, delivery: "failed", error: keyResult.error };
   }
 
-  try {
-    const res = await fetch(RESEND_API, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${keyResult.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ from, to: [params.to], subject, html }),
-    });
-
-    if (!res.ok) {
-      let detail = "Email provider rejected the request.";
-      try {
-        const errBody = (await res.json()) as { message?: string };
-        if (errBody.message) detail = errBody.message;
-      } catch {
-        detail = await res.text();
-      }
-      return { ok: false, delivery: "failed", error: detail };
-    }
-
-    return { ok: true, delivery: "email" };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Email send failed.";
-    return { ok: false, delivery: "failed", error: message };
-  }
+  return { ok: false, delivery: "failed", error: sent.error };
 }
 
 export async function sendAccountVerificationEmail(params: {
@@ -178,7 +208,6 @@ export async function sendAccountVerificationEmail(params: {
   name: string;
   verifyUrl: string;
 }): Promise<EmailDeliveryResult> {
-  const from = process.env.LISTING_EMAIL_FROM ?? "Submit Your Store <onboarding@resend.dev>";
   const subject = "Verify your email — Submit Your Store";
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">
@@ -195,40 +224,24 @@ export async function sendAccountVerificationEmail(params: {
   `;
 
   const keyResult = resolveResendKey();
-  if (!keyResult.ok) {
-    if (keyResult.delivery === "dev") {
-      console.info(`[dev] Account verification to ${params.to}: ${params.verifyUrl}`);
-      return { ok: true, delivery: "dev", devVerifyUrl: params.verifyUrl };
-    }
+  if (!keyResult.ok && keyResult.delivery === "dev") {
+    console.info(`[dev] Account verification to ${params.to}: ${params.verifyUrl}`);
+    return { ok: true, delivery: "dev", devVerifyUrl: params.verifyUrl };
+  }
+
+  const sent = await sendTransactionalEmail({
+    to: params.to,
+    subject,
+    html,
+    tags: ["account-verify"],
+  });
+  if (sent.ok) return sent;
+
+  if (!keyResult.ok && keyResult.delivery === "failed" && !process.env.BREVO_API_KEY?.trim()) {
     return { ok: false, delivery: "failed", error: keyResult.error };
   }
 
-  try {
-    const res = await fetch(RESEND_API, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${keyResult.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ from, to: [params.to], subject, html }),
-    });
-
-    if (!res.ok) {
-      let detail = "Email provider rejected the request.";
-      try {
-        const errBody = (await res.json()) as { message?: string };
-        if (errBody.message) detail = errBody.message;
-      } catch {
-        detail = await res.text();
-      }
-      return { ok: false, delivery: "failed", error: detail };
-    }
-
-    return { ok: true, delivery: "email" };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Email send failed.";
-    return { ok: false, delivery: "failed", error: message };
-  }
+  return { ok: false, delivery: "failed", error: sent.error };
 }
 
 export async function sendManageAccessEmail(params: {
@@ -252,7 +265,13 @@ export async function sendManageAccessEmail(params: {
       console.info(`[dev] Manage access email to ${params.to}: ${params.manageUrl}`);
       return { ok: true };
     }
-    return { ok: false, error: keyResult.error };
+    const brevo = await sendBrevoEmail({
+      to: params.to,
+      subject: `Manage ${params.businessName} on Submit Your Store`,
+      html,
+      tags: ["manage-access"],
+    });
+    return { ok: brevo.ok, error: brevo.error };
   }
 
   const res = await fetch(RESEND_API, {

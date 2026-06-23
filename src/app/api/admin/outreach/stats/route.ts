@@ -4,6 +4,8 @@ import { OUTREACH_QUEUE_LIMIT } from "@/lib/outreach-ranking.server";
 import { getOutreachStats, listOutreachCandidates, listOutreachLogs } from "@/lib/outreach.server";
 import { getSiteUrl } from "@/lib/site-config";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   if (!(await isAdminSession())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

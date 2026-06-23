@@ -1,0 +1,50 @@
+{
+  "name": "submit-your-store",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "dev:clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "enrich": "python scripts/enrich_data.py",
+    "fix": "python scripts/fix_businesses.py",
+    "import:batch2": "python scripts/import_batch2.py",
+    "images:batch1": "python scripts/update_batch1_images.py",
+    "logos:backfill": "python scripts/backfill_logos.py",
+    "brand:icons": "node scripts/generate-brand-icons.mjs",
+    "blog:images": "node scripts/compress-blog-images.mjs",
+    "faqs:import": "python scripts/import_hvac_faqs.py",
+    "supabase:verify": "node scripts/verify-supabase.mjs",
+    "supabase:migrate": "node scripts/apply-supabase-migration.mjs",
+    "supabase:import": "node scripts/import-businesses-to-supabase.mjs",
+    "supabase:site-data": "node scripts/apply-site-data-migration.mjs",
+    "cloudinary:upload": "node scripts/upload-business-media-cloudinary.mjs",
+    "setup:all": "node scripts/setup-all.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.108.2",
+    "cloudinary": "^2.10.0",
+    "firebase": "^12.14.0",
+    "firebase-admin": "^14.0.0",
+    "jose": "^6.2.3",
+    "next": "^15.3.3",
+    "next-auth": "^5.0.0-beta.31",
+    "pg": "^8.21.0",
+    "playwright": "^1.60.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "sharp": "^0.35.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.8",
+    "@types/node": "^22.15.21",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "eslint": "^9.27.0",
+    "eslint-config-next": "^15.3.3",
+    "tailwindcss": "^4.1.8",
+    "typescript": "^5.8.3"
+  }
+}

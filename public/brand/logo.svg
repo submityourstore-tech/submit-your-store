@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Submit Your Store">
+  <defs>
+    <linearGradient id="pinBlue" x1="256" y1="40" x2="256" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2f9fe8"/>
+      <stop offset="55%" stop-color="#1274c0"/>
+      <stop offset="100%" stop-color="#0b4f86"/>
+    </linearGradient>
+    <linearGradient id="awning" x1="256" y1="118" x2="256" y2="188" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffc44d"/>
+      <stop offset="100%" stop-color="#ff6c00"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#pinBlue)" d="M256 24c-92 0-168 74-168 166 0 44 18 86 52 132 34 46 86 98 116 146 30-48 82-100 116-146 34-46 52-88 52-132C424 98 348 24 256 24Z"/>
+  <rect x="156" y="188" width="200" height="118" rx="10" fill="#0f6eb8"/>
+  <path fill="url(#awning)" d="M146 176c0-10 8-18 18-18h184c10 0 18 8 18 18v18c0 6-5 10-10 10H156c-5 0-10-4-10-10v-18Z"/>
+  <path fill="url(#awning)" d="M156 194h200v14c0 8-6 14-14 14h-36c-8 0-14-6-14-14v-6h-72v6c0 8-6 14-14 14h-36c-8 0-14-6-14-14v-14Z"/>
+  <rect x="188" y="228" width="52" height="78" rx="6" fill="#fff"/>
+  <rect x="272" y="236" width="44" height="44" rx="6" fill="#fff"/>
+</svg>

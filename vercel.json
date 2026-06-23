@@ -1,0 +1,16 @@
+{
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "submit-your-store.vercel.app" }],
+      "destination": "https://www.submityourstore.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "submityourstore.com" }],
+      "destination": "https://www.submityourstore.com/:path*",
+      "permanent": true
+    }
+  ]
+}

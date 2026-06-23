@@ -2,6 +2,10 @@ import { sendBrevoEmail } from "@/lib/brevo.server";
 import { readBusinesses } from "@/lib/businesses-data";
 import { isUnclaimedListing } from "@/lib/claim-status";
 import {
+  checkOutreachTablesReady,
+  ensureOutreachTables,
+} from "@/lib/outreach-db.server";
+import {
   OUTREACH_QUEUE_LIMIT,
   getMarketRank,
   rankOutreachCandidates,
@@ -54,6 +58,8 @@ export type OutreachTrackingStats = {
 export type OutreachStats = {
   brevoConfigured: boolean;
   outreachTablesReady: boolean;
+  outreachCanAutoSetup: boolean;
+  outreachSetupError?: string;
   totalActive: number;
   unclaimedTotal: number;
   unclaimedWithEmail: number;
@@ -99,6 +105,11 @@ export async function loadOutreachTemplate(): Promise<OutreachTemplate> {
 }
 
 export async function saveOutreachTemplate(template: OutreachTemplate): Promise<void> {
+  const tables = await ensureOutreachTables({ autoApply: true });
+  if (!tables.ready) {
+    throw new Error(tables.error ?? "Outreach tables are not ready.");
+  }
+
   const supabase = createSupabaseAdmin();
   const { error } = await supabase.from("outreach_settings").upsert(
     {
@@ -117,17 +128,6 @@ export async function saveOutreachTemplate(template: OutreachTemplate): Promise<
       );
     }
     throw new Error(error.message);
-  }
-}
-
-export async function checkOutreachTablesReady(): Promise<boolean> {
-  try {
-    const supabase = createSupabaseAdmin();
-    const { error } = await supabase.from("outreach_settings").select("id").limit(1);
-    if (error && isOutreachTableMissing(error)) return false;
-    return !error;
-  } catch {
-    return false;
   }
 }
 
@@ -202,11 +202,13 @@ export async function getOutreachStats(): Promise<OutreachStats> {
     limit: OUTREACH_QUEUE_LIMIT,
   });
   const logs = await listOutreachLogs(500);
-  const outreachTablesReady = await checkOutreachTablesReady();
+  const tableStatus = await ensureOutreachTables({ autoApply: true });
 
   return {
     brevoConfigured: Boolean(process.env.BREVO_API_KEY?.trim()),
-    outreachTablesReady,
+    outreachTablesReady: tableStatus.ready,
+    outreachCanAutoSetup: tableStatus.canAutoSetup,
+    outreachSetupError: tableStatus.ready ? undefined : tableStatus.error,
     totalActive: active.length,
     unclaimedTotal: unclaimed.length,
     unclaimedWithEmail: unclaimedWithEmail.length,
@@ -409,11 +411,9 @@ export async function sendOutreachBatch(options: {
   businessIds?: string[];
   resend?: boolean;
 }): Promise<{ results: SendOutreachResult[]; sent: number; failed: number }> {
-  const tablesReady = await checkOutreachTablesReady();
-  if (!tablesReady) {
-    throw new Error(
-      "Outreach tables not found in Supabase. Run migrations: 20250614210000_create_outreach_tables.sql and 20250614220000_outreach_tracking.sql",
-    );
+  const tables = await ensureOutreachTables({ autoApply: true });
+  if (!tables.ready) {
+    throw new Error(tables.error ?? "Outreach tables are not ready.");
   }
 
   if (!process.env.BREVO_API_KEY?.trim()) {
@@ -547,4 +547,83 @@ export async function previewOutreachEmail(businessId: string): Promise<{
   if (!business) return null;
   const template = await loadOutreachTemplate();
   return buildOutreachEmailForBusiness(business, businesses, template);
+}
+
+export type SendOutreachTestResult = {
+  ok: boolean;
+  error?: string;
+  messageId?: string;
+  subject?: string;
+  sampleBusinessName?: string;
+};
+
+export async function sendOutreachTestEmail(params: {
+  to: string;
+  businessId?: string;
+  subject?: string;
+  htmlBody?: string;
+}): Promise<SendOutreachTestResult> {
+  const to = params.to.trim();
+  if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+    return { ok: false, error: "Enter a valid test email address." };
+  }
+
+  if (!process.env.BREVO_API_KEY?.trim()) {
+    return { ok: false, error: "BREVO_API_KEY is not configured in environment variables." };
+  }
+
+  const allBusinesses = await readBusinesses();
+  const template =
+    params.subject?.trim() && params.htmlBody?.trim()
+      ? { subject: params.subject.trim(), htmlBody: params.htmlBody.trim() }
+      : await loadOutreachTemplate();
+
+  let business: Business | undefined;
+  if (params.businessId) {
+    business = allBusinesses.find((b) => b.id === params.businessId);
+  }
+  if (!business) {
+    const candidates = await listOutreachCandidates({ skipContacted: false, limit: 1 });
+    business = candidates[0] ?? allBusinesses.find((b) => b.status !== "hidden");
+  }
+  if (!business) {
+    return { ok: false, error: "No sample business found for test email preview." };
+  }
+
+  const built = await buildOutreachEmailForBusiness(business, allBusinesses, template);
+  if (!built) {
+    return { ok: false, error: "Could not build test email from template." };
+  }
+
+  const testSubject = `[TEST] ${built.subject}`;
+
+  const sent = await sendBrevoEmail({
+    to,
+    subject: testSubject,
+    html: built.html,
+    tags: ["outreach-test", `sample:${business.id}`],
+  });
+
+  if (!sent.ok) {
+    return { ok: false, error: sent.error ?? "Brevo rejected the test email." };
+  }
+
+  if (await checkOutreachTablesReady()) {
+    const logId = await logOutreach({
+      businessId: business.id,
+      businessName: `[TEST] ${business.name}`,
+      businessEmail: to,
+      status: "sent",
+    });
+    if (logId && sent.messageId) {
+      await attachBrevoMessageId(logId, sent.messageId);
+    }
+  }
+
+  return {
+    ok: true,
+    messageId: sent.messageId,
+    subject: testSubject,
+    sampleBusinessName: business.name,
+  };
 }

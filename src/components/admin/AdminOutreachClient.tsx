@@ -19,6 +19,8 @@ type TrackingStats = {
 type OutreachStats = {
   brevoConfigured: boolean;
   outreachTablesReady: boolean;
+  outreachCanAutoSetup?: boolean;
+  outreachSetupError?: string;
   unclaimedTotal: number;
   unclaimedWithEmail: number;
   alreadyContacted: number;
@@ -108,6 +110,10 @@ export function AdminOutreachClient() {
   const [resend, setResend] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendResults, setSendResults] = useState<SendResult[]>([]);
+
+  const [testEmail, setTestEmail] = useState("");
+  const [sendingTest, setSendingTest] = useState(false);
+  const [settingUpTables, setSettingUpTables] = useState(false);
 
   const [previewSubject, setPreviewSubject] = useState("");
   const [previewHtml, setPreviewHtml] = useState("");
@@ -258,6 +264,63 @@ export function AdminOutreachClient() {
     }
   }
 
+  async function sendTestEmail() {
+    setSendingTest(true);
+    setError("");
+    setSuccess("");
+    try {
+      const res = await fetch("/api/admin/outreach/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "test",
+          testEmail: testEmail.trim(),
+          businessId: previewBusinessId || undefined,
+          subject,
+          htmlBody,
+        }),
+      });
+      const data = (await res.json()) as {
+        error?: string;
+        subject?: string;
+        sampleBusinessName?: string;
+      };
+      if (!res.ok) {
+        setError(data.error ?? "Test email failed.");
+        return;
+      }
+      setSuccess(
+        `Test email sent to ${testEmail.trim()} — subject: "${data.subject ?? ""}"` +
+          (data.sampleBusinessName ? ` (sample: ${data.sampleBusinessName})` : ""),
+      );
+      await load();
+    } catch {
+      setError("Network error sending test email.");
+    } finally {
+      setSendingTest(false);
+    }
+  }
+
+  async function setupOutreachTables() {
+    setSettingUpTables(true);
+    setError("");
+    setSuccess("");
+    try {
+      const res = await fetch("/api/admin/outreach/setup", { method: "POST" });
+      const data = (await res.json()) as { error?: string; message?: string; ready?: boolean };
+      if (!res.ok || !data.ready) {
+        setError(data.error ?? "Could not create outreach tables.");
+        return;
+      }
+      setSuccess(data.message ?? "Outreach tables ready.");
+      await load();
+    } catch {
+      setError("Network error during database setup.");
+    } finally {
+      setSettingUpTables(false);
+    }
+  }
+
   if (loading) {
     return <p className="text-sm text-[#717171]">Loading outreach dashboard…</p>;
   }
@@ -281,10 +344,27 @@ export function AdminOutreachClient() {
 
       {stats && stats.outreachTablesReady === false && (
         <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <strong>Outreach database tables missing.</strong> Run Supabase migrations{" "}
-          <code className="text-xs">20250614210000_create_outreach_tables.sql</code> and{" "}
-          <code className="text-xs">20250614220000_outreach_tracking.sql</code> in SQL Editor.
-          Sends and tracking will not work until then.
+          <p>
+            <strong>Outreach database tables missing.</strong>{" "}
+            {stats.outreachSetupError ??
+              "Tracking and batch send need outreach_settings + outreach_logs tables."}
+          </p>
+          {stats.outreachCanAutoSetup ? (
+            <button
+              type="button"
+              disabled={settingUpTables}
+              onClick={() => void setupOutreachTables()}
+              className="mt-3 rounded bg-[#1274c0] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0d5a94] disabled:opacity-60"
+            >
+              {settingUpTables ? "Creating tables…" : "Create outreach tables now"}
+            </button>
+          ) : (
+            <p className="mt-2 text-xs">
+              Add <strong>SUPABASE_DB_URL</strong> in Vercel (Supabase → Settings → Database → Connection
+              string URI), redeploy, then reload this page — or paste the migration SQL files in Supabase SQL
+              Editor manually.
+            </p>
+          )}
         </div>
       )}
 
@@ -430,6 +510,33 @@ export function AdminOutreachClient() {
                 <code key={v} className="mr-1 rounded bg-[#f0f0f0] px-1">{`{{${v}}}`}</code>
               ))}
             </p>
+
+            <div className="mt-4 flex flex-wrap items-end gap-3 border-t border-[#eee] pt-4">
+              <label className="text-sm">
+                <span className="font-medium text-[#333]">Send test email to</span>
+                <input
+                  type="email"
+                  value={testEmail}
+                  onChange={(e) => setTestEmail(e.target.value)}
+                  placeholder="you@company.com"
+                  className="mt-1 block w-64 rounded border px-3 py-2 text-sm"
+                />
+              </label>
+              <button
+                type="button"
+                disabled={sendingTest || !testEmail.trim() || !stats?.brevoConfigured}
+                onClick={() => void sendTestEmail()}
+                className="rounded border border-[#1274c0] bg-[#f0f7fd] px-4 py-2 text-sm font-semibold text-[#1274c0] hover:bg-[#e0eef8] disabled:opacity-60"
+              >
+                {sendingTest ? "Sending test…" : "Send test email"}
+              </button>
+              <p className="text-xs text-[#717171]">
+                Uses current template above + sample listing data. Subject prefixed with [TEST].
+                {previewBusinessId && candidates[0] && (
+                  <span> Sample: <strong>{candidates[0].name}</strong></span>
+                )}
+              </p>
+            </div>
           </div>
           <div>
             {previewLoading && (

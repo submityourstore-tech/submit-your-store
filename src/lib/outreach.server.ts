@@ -1,4 +1,4 @@
-import { sendBrevoEmail } from "@/lib/brevo.server";
+import { sendBrevoEmail, getBrevoSenderInfo } from "@/lib/brevo.server";
 import { readBusinesses } from "@/lib/businesses-data";
 import { isUnclaimedListing } from "@/lib/claim-status";
 import {
@@ -57,9 +57,13 @@ export type OutreachTrackingStats = {
 
 export type OutreachStats = {
   brevoConfigured: boolean;
+  brevoSenderEmail: string;
+  brevoSenderName: string;
+  brevoReplyTo: string;
   outreachTablesReady: boolean;
   outreachCanAutoSetup: boolean;
   outreachSetupError?: string;
+  outreachSetupSql?: string;
   totalActive: number;
   unclaimedTotal: number;
   unclaimedWithEmail: number;
@@ -203,12 +207,17 @@ export async function getOutreachStats(): Promise<OutreachStats> {
   });
   const logs = await listOutreachLogs(500);
   const tableStatus = await ensureOutreachTables({ autoApply: true });
+  const sender = getBrevoSenderInfo();
 
   return {
-    brevoConfigured: Boolean(process.env.BREVO_API_KEY?.trim()),
+    brevoConfigured: sender.apiConfigured,
+    brevoSenderEmail: sender.email,
+    brevoSenderName: sender.name,
+    brevoReplyTo: sender.replyTo,
     outreachTablesReady: tableStatus.ready,
     outreachCanAutoSetup: tableStatus.canAutoSetup,
     outreachSetupError: tableStatus.ready ? undefined : tableStatus.error,
+    outreachSetupSql: tableStatus.setupSql,
     totalActive: active.length,
     unclaimedTotal: unclaimed.length,
     unclaimedWithEmail: unclaimedWithEmail.length,

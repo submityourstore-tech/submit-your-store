@@ -1,5 +1,6 @@
 import {
   formatLocationLabel,
+  resolveBusinessCityState,
   toLocationSlug,
 } from "@/lib/location-utils";
 import type { Business } from "@/types/business";
@@ -126,16 +127,17 @@ export function groupBusinessesByCity(businesses: Business[]): CityGroup[] {
   const map = new Map<string, CityGroup>();
 
   for (const b of businesses) {
-    const key = `${b.city}|${b.state}`;
+    const { city, state } = resolveBusinessCityState(b);
+    const key = `${city}|${state}`;
     const existing = map.get(key);
     if (existing) {
       existing.businesses.push(b);
     } else {
       map.set(key, {
-        city: b.city,
-        state: b.state,
-        label: formatLocationLabel(b.city, b.state),
-        slug: toLocationSlug(b.city, b.state),
+        city,
+        state,
+        label: formatLocationLabel(city, state),
+        slug: toLocationSlug(city, state),
         businesses: [b],
       });
     }

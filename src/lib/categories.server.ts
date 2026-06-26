@@ -23,7 +23,7 @@ export function matchesPublicQuery(business: Business, query: PublicBusinessQuer
   if (!isActiveBusiness(business)) return false;
   if (query.vertical && !matchesVerticalFilter(business, query.vertical)) return false;
   if (query.categorySlug && business.categorySlug !== query.categorySlug) return false;
-  if (query.city && business.city !== query.city) return false;
+  if (query.city && business.city.trim().toLowerCase() !== query.city.trim().toLowerCase()) return false;
   if (query.state && business.state !== query.state) return false;
   return true;
 }

@@ -1,12 +1,13 @@
 import type { AdminBusinessInput } from "@/lib/businesses-write";
 import { ADMIN_CSV_FORMAT } from "@/lib/admin-csv-format";
 import {
-  buildHeaderMappings,
   getRowValue,
   mapHeaderToCanonical,
   normalizeCsvHeader,
+  isKnownCanonicalField,
   type HeaderMapping,
 } from "@/lib/admin-csv-header-mapping";
+import { isPlausibleCityName, parseCityStateFromAddress } from "@/lib/location-utils";
 import { resolveCategoryKey, resolveCategoryLabel } from "@/lib/categories-config";
 import type { SocialLinks, WeeklyHoursEntry } from "@/types/business";
 
@@ -155,31 +156,94 @@ function rowSocial(row: Record<string, string>): SocialLinks {
 export type CsvParseResult = {
   rows: Record<string, string>[];
   headerMappings: HeaderMapping[];
+  skippedHeaders: string[];
   delimiter: string;
 };
+
+export type CsvUploadValidation = {
+  ok: boolean;
+  error?: string;
+  hint?: string;
+};
+
+/** Reject Excel/binary uploads before parsing garbage as CSV. */
+export function validateCsvUploadContent(content: string, filename?: string): CsvUploadValidation {
+  const name = filename?.toLowerCase() ?? "";
+  if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
+    return {
+      ok: false,
+      error: "Excel (.xlsx) files cannot be uploaded directly.",
+      hint: "Google Sheets: File → Download → Comma Separated Values (.csv). Then upload the .csv file here.",
+    };
+  }
+
+  const head = content.slice(0, 800);
+  if (head.startsWith("PK") && (head.includes("xl/") || head.includes("[Content_Types]"))) {
+    return {
+      ok: false,
+      error: "This file looks like Excel, not CSV/TSV.",
+      hint: "Save your spreadsheet as .csv or tab-separated .tsv before uploading.",
+    };
+  }
+
+  const nonPrintable = (head.match(/[\x00-\x08\x0E-\x1F]/g) ?? []).length;
+  if (nonPrintable > 8) {
+    return {
+      ok: false,
+      error: "File is not plain-text CSV/TSV.",
+      hint: "Export from Google Sheets as CSV (.csv) or TSV (.tsv), not .xlsx.",
+    };
+  }
+
+  return { ok: true };
+}
 
 export function parseCsvWithMeta(text: string): CsvParseResult {
   const lines = text.split(/\r?\n/).filter((line) => line.trim());
   if (lines.length < 2) {
-    return { rows: [], headerMappings: [], delimiter: "," };
+    return { rows: [], headerMappings: [], skippedHeaders: [], delimiter: "," };
   }
 
   const delimiter = detectDelimiter(lines[0]);
   const rawHeaders = parseDelimitedLine(lines[0], delimiter);
-  const headerMappings = buildHeaderMappings(rawHeaders);
-  const headers = rawHeaders.map((h) => mapHeaderToCanonical(h));
+  const skippedHeaders: string[] = [];
+  const headerMappings: HeaderMapping[] = [];
+
+  for (const original of rawHeaders) {
+    const canonical = mapHeaderToCanonical(original);
+    if (!isKnownCanonicalField(canonical)) {
+      if (original.trim()) skippedHeaders.push(original.trim());
+      continue;
+    }
+    headerMappings.push({
+      original,
+      normalized: normalizeCsvHeader(original),
+      canonical,
+    });
+  }
 
   const rows: Record<string, string>[] = [];
   for (const line of lines.slice(1)) {
     const values = parseDelimitedLine(line, delimiter);
     const row: Record<string, string> = {};
-    headers.forEach((header, i) => {
-      row[header] = clean(values[i]);
+
+    rawHeaders.forEach((rawHeader, i) => {
+      const canonical = mapHeaderToCanonical(rawHeader);
+      if (!isKnownCanonicalField(canonical)) return;
+
+      const value = clean(values[i]);
+      if (!value) return;
+
+      const existing = row[canonical];
+      if (!existing || isMissing(existing)) {
+        row[canonical] = value;
+      }
     });
+
     if (Object.values(row).some(Boolean)) rows.push(row);
   }
 
-  return { rows, headerMappings, delimiter };
+  return { rows, headerMappings, skippedHeaders, delimiter };
 }
 
 export function parseCsvRows(text: string): Record<string, string>[] {
@@ -235,6 +299,19 @@ export function csvRowToAdminInput(row: Record<string, string>): AdminBusinessIn
         state: getRowValue(row, "state") || "TX",
       };
 
+  let city = getRowValue(row, "city") || parsedAddress.city;
+  let state = getRowValue(row, "state") || parsedAddress.state;
+  if (!isPlausibleCityName(city) && addressRaw) {
+    const fromAddress = parseCityStateFromAddress(addressRaw);
+    if (fromAddress) {
+      city = fromAddress.city;
+      state = fromAddress.state;
+    } else {
+      city = parsedAddress.city;
+      state = parsedAddress.state;
+    }
+  }
+
   const reviews = ["top_review_1", "top_review_2", "top_review_3"]
     .map((key) => getRowValue(row, key))
     .filter((r) => !isMissing(r));
@@ -254,8 +331,8 @@ export function csvRowToAdminInput(row: Record<string, string>): AdminBusinessIn
     gbpUrl,
     ...category,
     address: parsedAddress.address || addressRaw || undefined,
-    city: parsedAddress.city,
-    state: parsedAddress.state,
+    city,
+    state,
     website: isMissing(getRowValue(row, "website")) ? undefined : getRowValue(row, "website"),
     email: isMissing(getRowValue(row, "email")) ? undefined : getRowValue(row, "email"),
     phone: isMissing(getRowValue(row, "phone")) ? undefined : getRowValue(row, "phone"),

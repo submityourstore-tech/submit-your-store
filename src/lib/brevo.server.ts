@@ -1,3 +1,5 @@
+import { OUTREACH_REPLY_TO_EMAIL, OUTREACH_SENDER_EMAIL } from "@/lib/site-config";
+
 const BREVO_API = "https://api.brevo.com/v3/smtp/email";
 
 export type BrevoSendResult = {
@@ -6,8 +8,34 @@ export type BrevoSendResult = {
   error?: string;
 };
 
+export type BrevoSenderInfo = {
+  email: string;
+  name: string;
+  replyTo: string;
+  apiConfigured: boolean;
+};
+
+export function getBrevoSenderInfo(): BrevoSenderInfo {
+  const email =
+    process.env.BREVO_SENDER_EMAIL?.trim() ||
+    process.env.OUTREACH_SENDER_EMAIL?.trim() ||
+    OUTREACH_SENDER_EMAIL;
+  const name = process.env.BREVO_SENDER_NAME?.trim() || "Submit Your Store";
+  const replyTo =
+    process.env.BREVO_REPLY_TO?.trim() ||
+    process.env.OUTREACH_REPLY_TO?.trim() ||
+    OUTREACH_REPLY_TO_EMAIL;
+
+  return {
+    email,
+    name,
+    replyTo,
+    apiConfigured: Boolean(process.env.BREVO_API_KEY?.trim()),
+  };
+}
+
 function resolveBrevoConfig():
-  | { ok: true; apiKey: string; senderEmail: string; senderName: string }
+  | { ok: true; apiKey: string; senderEmail: string; senderName: string; replyTo: string }
   | { ok: false; error: string } {
   const apiKey = process.env.BREVO_API_KEY?.trim();
   if (!apiKey) {
@@ -18,13 +46,14 @@ function resolveBrevoConfig():
     };
   }
 
-  const senderEmail =
-    process.env.BREVO_SENDER_EMAIL?.trim() ||
-    process.env.LISTING_EMAIL_FROM?.match(/<([^>]+)>/)?.[1]?.trim() ||
-    "support@submityourstore.com";
-  const senderName = process.env.BREVO_SENDER_NAME?.trim() || "Submit Your Store";
-
-  return { ok: true, apiKey, senderEmail, senderName };
+  const sender = getBrevoSenderInfo();
+  return {
+    ok: true,
+    apiKey,
+    senderEmail: sender.email,
+    senderName: sender.name,
+    replyTo: sender.replyTo,
+  };
 }
 
 export async function sendBrevoEmail(params: {
@@ -55,7 +84,7 @@ export async function sendBrevoEmail(params: {
       body: JSON.stringify({
         sender: { name: config.senderName, email: config.senderEmail },
         to: [{ email: params.to.trim() }],
-        replyTo: params.replyTo ? { email: params.replyTo } : undefined,
+        replyTo: { email: (params.replyTo ?? config.replyTo).trim() },
         subject: params.subject,
         htmlContent: params.html,
         tags: params.tags?.length ? params.tags : ["outreach"],

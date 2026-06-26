@@ -59,6 +59,9 @@ const DIRECT_ALIASES: Record<string, CanonicalCsvField> = {
   google_url: "gbp_url",
   googleurl: "gbp_url",
   google_place_url: "gbp_url",
+  googlemap: "gbp_url",
+  google_map: "gbp_url",
+  googlemapurl: "gbp_url",
 
   // Business name
   business_name: "business_name",
@@ -195,6 +198,15 @@ const DIRECT_ALIASES: Record<string, CanonicalCsvField> = {
   business_id: "id",
   listing_id: "id",
 };
+
+/** All canonical fields we recognize — unknown spreadsheet columns are skipped. */
+export const KNOWN_CANONICAL_FIELDS = new Set<string>(
+  Object.values(DIRECT_ALIASES),
+);
+
+export function isKnownCanonicalField(field: string): boolean {
+  return KNOWN_CANONICAL_FIELDS.has(field);
+}
 
 export function normalizeCsvHeader(header: string): string {
   return header

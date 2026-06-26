@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { parseCsvRows } from "@/lib/admin-csv.server";
+import { parseCsvRows, validateCsvUploadContent } from "@/lib/admin-csv.server";
 import {
   findBusinessForBulkRow,
   rowToBulkUpdatePatch,
@@ -36,11 +36,20 @@ export async function POST(request: Request) {
     }
 
     const file = form.get("file");
+    const filename = file instanceof File ? file.name : undefined;
     const csvText =
       file instanceof File ? await file.text() : String(form.get("csvText") ?? "");
 
     if (!csvText.trim()) {
       return NextResponse.json({ error: "CSV file or text is required." }, { status: 400 });
+    }
+
+    const uploadCheck = validateCsvUploadContent(csvText, filename);
+    if (!uploadCheck.ok) {
+      return NextResponse.json(
+        { error: uploadCheck.error, hint: uploadCheck.hint },
+        { status: 400 },
+      );
     }
 
     const rows = parseCsvRows(csvText);

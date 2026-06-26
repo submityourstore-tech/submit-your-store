@@ -22,6 +22,10 @@ export function getSiteUrl(): string {
 
 export const SUPPORT_EMAIL = "support@submityourstore.com";
 
+/** Default Brevo outreach sender — must be verified in Brevo dashboard */
+export const OUTREACH_SENDER_EMAIL = "submityourstore@gmail.com";
+export const OUTREACH_REPLY_TO_EMAIL = "submityourstore@gmail.com";
+
 /** WhatsApp shown in unclaimed outreach emails */
 export const OUTREACH_WHATSAPP_DISPLAY = "+91 62837 33278";
 export const OUTREACH_WHATSAPP_LINK = "https://wa.me/916283733278";

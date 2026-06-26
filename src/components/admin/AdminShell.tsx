@@ -18,6 +18,7 @@ const MAIN_NAV = [
 ] as const;
 
 const DATA_TOOLS_NAV = [
+  { href: "/admin/data-export", label: "Data export", icon: "📥" },
   { href: "/admin/data-issues", label: "Data issues", icon: "⚠️" },
 ] as const;
 

@@ -5,6 +5,7 @@ import {
   detectNameGbpMismatch,
   parseCsvWithMeta,
   validateCsvPublishRow,
+  validateCsvUploadContent,
 } from "@/lib/admin-csv.server";
 import { isAdminSession } from "@/lib/admin-auth.server";
 import { readBusinesses } from "@/lib/businesses-data";
@@ -28,6 +29,7 @@ export async function POST(request: Request) {
   try {
     const form = await request.formData();
     const file = form.get("file");
+    const filename = file instanceof File ? file.name : undefined;
     const csvText =
       file instanceof File ? await file.text() : String(form.get("csvText") ?? "");
     const previewOnly = form.get("preview") === "true";
@@ -36,7 +38,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "CSV file or text is required." }, { status: 400 });
     }
 
-    const { rows, headerMappings, delimiter } = parseCsvWithMeta(csvText);
+    const uploadCheck = validateCsvUploadContent(csvText, filename);
+    if (!uploadCheck.ok) {
+      return NextResponse.json(
+        { error: uploadCheck.error, hint: uploadCheck.hint },
+        { status: 400 },
+      );
+    }
+
+    const { rows, headerMappings, skippedHeaders, delimiter } = parseCsvWithMeta(csvText);
     if (!rows.length) {
       return NextResponse.json({ error: "No data rows found in CSV." }, { status: 400 });
     }
@@ -49,6 +59,7 @@ export async function POST(request: Request) {
         rowCount: rows.length,
         delimiter: delimiter === "\t" ? "tab" : "comma",
         headerMappings,
+        skippedHeaders,
         sampleRow: sample,
         sampleValidation: validation,
       });

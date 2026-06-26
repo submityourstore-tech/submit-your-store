@@ -5,7 +5,9 @@ import type {
   SocialLinks,
   WeeklyHoursEntry,
 } from "@/types/business";
-import { applyBusinessMetadata, businessMetadata } from "@/lib/business-metadata";import { resolveGalleryUrls, resolveMediaUrl } from "@/lib/business-media-urls.server";
+import { applyBusinessMetadata, businessMetadata } from "@/lib/business-metadata";
+import { resolveBusinessCityState } from "@/lib/location-utils";
+import { resolveGalleryUrls, resolveMediaUrl } from "@/lib/business-media-urls.server";
 
 export type BusinessRow = {
   id: string;
@@ -72,6 +74,10 @@ export function mapRowToBusiness(row: BusinessRow): Business {
   if (row.about_blocks?.length) business.aboutBlocks = row.about_blocks;
   if (row.faqs?.length) business.faqs = row.faqs;
   applyBusinessMetadata(business, row.metadata);
+
+  const resolved = resolveBusinessCityState(business);
+  business.city = resolved.city;
+  business.state = resolved.state;
 
   return business;
 }

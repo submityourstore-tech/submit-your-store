@@ -21,6 +21,7 @@ type CsvPreview = {
   rowCount: number;
   delimiter: string;
   headerMappings: { original: string; normalized: string; canonical: string }[];
+  skippedHeaders?: string[];
   sampleValidation: { ok: boolean; error?: string; missingFields?: string[] };
 };
 
@@ -101,18 +102,31 @@ export function AdminListingsClient() {
   async function handleCsvFileChange(file: File | null) {
     if (!file) {
       setCsvPreview(null);
+      setError("");
       return;
     }
+
+    if (/\.xlsx?$/i.test(file.name)) {
+      setCsvPreview(null);
+      setError(
+        "Excel (.xlsx) upload nahi hota. Google Sheets → File → Download → Comma Separated Values (.csv), phir woh file upload karo.",
+      );
+      return;
+    }
+
     setPreviewLoading(true);
     setCsvPreview(null);
+    setError("");
     try {
       const body = new FormData();
       body.append("file", file);
       body.append("preview", "true");
       const res = await fetch("/api/admin/listings/csv", { method: "POST", body });
-      const data = (await res.json()) as CsvPreview & { error?: string };
+      const data = (await res.json()) as CsvPreview & { error?: string; hint?: string };
       if (res.ok) {
         setCsvPreview(data);
+      } else {
+        setError([data.error, data.hint].filter(Boolean).join("\n"));
       }
     } finally {
       setPreviewLoading(false);
@@ -134,18 +148,27 @@ export function AdminListingsClient() {
       return;
     }
 
+    if (/\.xlsx?$/i.test(file.name)) {
+      setError(
+        "Excel (.xlsx) upload nahi hota. Google Sheets se .csv download karke upload karo.",
+      );
+      setLoading(false);
+      return;
+    }
+
     try {
       const body = new FormData();
       body.append("file", file);
       const res = await fetch("/api/admin/listings/csv", { method: "POST", body });
       const data = (await res.json()) as {
         error?: string;
+        hint?: string;
         published?: number;
         failed?: number;
         results?: CsvResult[];
       };
       if (!res.ok) {
-        setError(data.error ?? "CSV import failed.");
+        setError([data.error, data.hint].filter(Boolean).join("\n") ?? "CSV import failed.");
         return;
       }
       setCsvResults(data.results ?? []);
@@ -253,9 +276,10 @@ export function AdminListingsClient() {
             <p className="text-sm font-semibold text-[#1274c0]">Flexible upload — smart header detection</p>
             <p className="mt-2 text-sm text-[#555]">
               Sirf <strong>GBP URL + Business name + Description</strong> se publish ho jayega. Baaki fields optional.
-              Headers flexible hain — <code className="text-xs">Mobile</code> → phone,{" "}
-              <code className="text-xs">GBP</code> / <code className="text-xs">GBP URL</code> /{" "}
-              <code className="text-xs">GBP urls</code> → gbp_url, <code className="text-xs">Company</code> → name.
+              Headers flexible hain (caps/small dono) — <code className="text-xs">Mobile</code> → phone,{" "}
+              <code className="text-xs">GBP</code> / <code className="text-xs">GBP URL</code> → gbp_url,{" "}
+              <code className="text-xs">Company</code> → name. Extra columns jo listing mein nahi hain wo
+              automatically skip ho jati hain. <strong>.xlsx upload mat karo</strong> — sirf .csv / .tsv.
               Agar naam GBP se alag hai toh <Link href="/admin/data-issues" className="text-[#1274c0] hover:underline">Data issues</Link> mein flag hoga.
             </p>
           </div>
@@ -302,24 +326,33 @@ export function AdminListingsClient() {
                     Sample row: {csvPreview.sampleValidation.error}
                   </p>
                 )}
-                <table className="mt-3 w-full text-xs">
-                  <thead>
-                    <tr className="text-left text-[#717171]">
-                      <th className="py-1 pr-2">Your header</th>
-                      <th className="py-1 pr-2">→</th>
-                      <th className="py-1">Mapped to</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {csvPreview.headerMappings.map((m) => (
-                      <tr key={m.original} className="border-t border-[#eee]">
-                        <td className="py-1.5 font-mono">{m.original || "(empty)"}</td>
-                        <td className="py-1.5">→</td>
-                        <td className="py-1.5 font-mono text-[#1274c0]">{m.canonical}</td>
+                {csvPreview.headerMappings.length > 0 && (
+                  <table className="mt-3 w-full text-xs">
+                    <thead>
+                      <tr className="text-left text-[#717171]">
+                        <th className="py-1 pr-2">Your header</th>
+                        <th className="py-1 pr-2">→</th>
+                        <th className="py-1">Mapped to</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {csvPreview.headerMappings.map((m) => (
+                        <tr key={m.original} className="border-t border-[#eee]">
+                          <td className="py-1.5 font-mono">{m.original || "(empty)"}</td>
+                          <td className="py-1.5">→</td>
+                          <td className="py-1.5 font-mono text-[#1274c0]">{m.canonical}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+                {csvPreview.skippedHeaders && csvPreview.skippedHeaders.length > 0 && (
+                  <p className="mt-3 text-xs text-[#717171]">
+                    Skipped {csvPreview.skippedHeaders.length} extra column(s):{" "}
+                    {csvPreview.skippedHeaders.slice(0, 8).join(", ")}
+                    {csvPreview.skippedHeaders.length > 8 ? "…" : ""}
+                  </p>
+                )}
               </div>
             )}
 

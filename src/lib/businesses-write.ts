@@ -5,7 +5,7 @@ import { businessToRow } from "@/lib/businesses-supabase.server";
 import { DuplicateGbpError, findDuplicateGbpListing } from "@/lib/gbp";
 import { resolveListingMediaUrls } from "@/lib/listing-media-cloudinary.server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
-import type { Business, SocialLinks } from "@/types/business";
+import type { Business, ClaimStatus, SocialLinks } from "@/types/business";
 import type { NewListingPayload } from "@/types/listing";
 
 function slugifyName(text: string): string {
@@ -183,6 +183,7 @@ export type AdminBusinessInput = {
   social?: SocialLinks;
   logoUrl?: string;
   galleryUrls?: string[];
+  claimStatus?: ClaimStatus;
 };
 
 export async function publishAdminBusiness(input: AdminBusinessInput): Promise<Business> {
@@ -231,7 +232,7 @@ export async function publishAdminBusiness(input: AdminBusinessInput): Promise<B
     description:
       input.description?.trim() ||
       `${input.businessName.trim()} is a ${category.toLowerCase()} serving ${city}, ${state}.`,
-    claimStatus: "verified",
+    claimStatus: input.claimStatus ?? "verified",
   };
 
   if (input.googleRating != null) business.googleRating = input.googleRating;
@@ -270,6 +271,7 @@ export type AdminBusinessUpdateInput = {
   faqs?: import("@/types/business").BusinessFaq[];
   foundedYear?: number | null;
   foundedYearConfidence?: string | null;
+  claimStatus?: ClaimStatus;
 };
 
 export async function updateAdminBusiness(
@@ -328,6 +330,7 @@ export async function updateAdminBusiness(
   if (input.foundedYearConfidence !== undefined) {
     patch.foundedYearConfidence = input.foundedYearConfidence?.trim() || undefined;
   }
+  if (input.claimStatus) patch.claimStatus = input.claimStatus;
 
   if (input.categoryKey || input.category) {
     const resolved = resolveCategory({

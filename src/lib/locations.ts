@@ -4,6 +4,7 @@ import {
   formatLocationLabel,
   getStateLabel,
   parseLocationSlug,
+  resolveBusinessCityState,
   toLocationSlug,
   type LocationStat,
 } from "@/lib/location-utils";
@@ -22,16 +23,17 @@ export async function getLocationStats(state?: string, vertical = "hvac"): Promi
   const counts = new Map<string, LocationStat>();
 
   for (const b of await getPublicBusinesses({ state, vertical })) {
-    const key = `${b.city}|${b.state}`;
+    const { city, state: st } = resolveBusinessCityState(b);
+    const key = `${city}|${st}`;
     const existing = counts.get(key);
     if (existing) {
       existing.count += 1;
     } else {
       counts.set(key, {
-        city: b.city,
-        state: b.state,
-        label: formatLocationLabel(b.city, b.state),
-        slug: toLocationSlug(b.city, b.state),
+        city,
+        state: st,
+        label: formatLocationLabel(city, st),
+        slug: toLocationSlug(city, st),
         count: 1,
       });
     }
@@ -86,15 +88,16 @@ export async function getBusinessesByState(state: string, vertical = "hvac"): Pr
   return getPublicBusinesses({ state, vertical });
 }
 
-export function getLocationFromBusiness(business: Pick<Business, "city" | "state" | "vertical" | "categorySlug" | "status">): {
+export function getLocationFromBusiness(business: Pick<Business, "city" | "state" | "address" | "vertical" | "categorySlug" | "status">): {
   label: string;
   slug: string;
   href: string;
 } {
-  const slug = toLocationSlug(business.city, business.state);
+  const { city, state } = resolveBusinessCityState(business);
+  const slug = toLocationSlug(city, state);
   const verticalSlug = resolveBusinessBrowseVertical(business);
   return {
-    label: formatLocationLabel(business.city, business.state),
+    label: formatLocationLabel(city, state),
     slug,
     href: getVerticalCityPath(verticalSlug, slug),
   };

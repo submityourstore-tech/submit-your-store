@@ -23,7 +23,7 @@ type OverviewStats = {
 
 const QUICK_LINKS = [
   { href: "/admin/data-pending", label: "Data pending", desc: "Copy GBP URLs & upload field CSVs", icon: "📊" },
-  { href: "/admin/data-verify", label: "Verify data", desc: "Batch verify scraped fields", icon: "✅" },
+  { href: "/admin/data-export", label: "Data export", desc: "Download all listings as CSV", icon: "📥" },
   { href: "/admin/data-issues", label: "Data issues", desc: "404 sites, name mismatches", icon: "⚠️" },
   { href: "/admin/outreach", label: "Outreach", desc: "Email unclaimed businesses", icon: "📧" },
   { href: "/admin/listings", label: "Publish new", desc: "Single or CSV bulk upload", icon: "➕" },

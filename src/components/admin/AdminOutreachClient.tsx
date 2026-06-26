@@ -18,9 +18,13 @@ type TrackingStats = {
 
 type OutreachStats = {
   brevoConfigured: boolean;
+  brevoSenderEmail: string;
+  brevoSenderName: string;
+  brevoReplyTo: string;
   outreachTablesReady: boolean;
   outreachCanAutoSetup?: boolean;
   outreachSetupError?: string;
+  outreachSetupSql?: string;
   unclaimedTotal: number;
   unclaimedWithEmail: number;
   alreadyContacted: number;
@@ -68,7 +72,17 @@ type SendResult = {
   error?: string;
 };
 
-function EmailInboxPreview({ subject, html }: { subject: string; html: string }) {
+function EmailInboxPreview({
+  subject,
+  html,
+  senderName,
+  senderEmail,
+}: {
+  subject: string;
+  html: string;
+  senderName?: string;
+  senderEmail?: string;
+}) {
   return (
     <div className="overflow-hidden rounded-lg border border-[#d1d5db] bg-[#f3f4f6] shadow-inner">
       <div className="border-b border-[#d1d5db] bg-white px-4 py-3">
@@ -78,7 +92,7 @@ function EmailInboxPreview({ subject, html }: { subject: string; html: string })
         </div>
         <p className="mt-2 text-sm font-bold text-[#111]">{subject || "(No subject)"}</p>
         <p className="mt-0.5 text-xs text-[#717171]">
-          From: Submit Your Store · To: business@company.com
+          From: {senderName ?? "Submit Your Store"} · {senderEmail ?? "submityourstore@gmail.com"} · To: business@company.com
         </p>
       </div>
       <div className="max-h-[520px] overflow-y-auto bg-white p-4">
@@ -111,9 +125,18 @@ export function AdminOutreachClient() {
   const [sending, setSending] = useState(false);
   const [sendResults, setSendResults] = useState<SendResult[]>([]);
 
-  const [testEmail, setTestEmail] = useState("");
+  const [testEmail, setTestEmail] = useState("submityourstore@gmail.com");
   const [sendingTest, setSendingTest] = useState(false);
   const [settingUpTables, setSettingUpTables] = useState(false);
+  const [copiedSql, setCopiedSql] = useState(false);
+  const [sendingToId, setSendingToId] = useState<string | null>(null);
+
+  const [addName, setAddName] = useState("");
+  const [addEmail, setAddEmail] = useState("");
+  const [addGbp, setAddGbp] = useState("");
+  const [addCity, setAddCity] = useState("Dallas");
+  const [addState, setAddState] = useState("TX");
+  const [addingBusiness, setAddingBusiness] = useState(false);
 
   const [previewSubject, setPreviewSubject] = useState("");
   const [previewHtml, setPreviewHtml] = useState("");
@@ -321,6 +344,89 @@ export function AdminOutreachClient() {
     }
   }
 
+  async function copySetupSql() {
+    const sql = stats?.outreachSetupSql ?? "";
+    if (!sql) return;
+    try {
+      await navigator.clipboard.writeText(sql);
+      setCopiedSql(true);
+      setTimeout(() => setCopiedSql(false), 2000);
+    } catch {
+      setError("Could not copy SQL.");
+    }
+  }
+
+  async function sendToBusiness(businessId: string) {
+    setSendingToId(businessId);
+    setError("");
+    setSuccess("");
+    try {
+      const res = await fetch("/api/admin/outreach/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "send", businessIds: [businessId], count: 1 }),
+      });
+      const data = (await res.json()) as {
+        error?: string;
+        sent?: number;
+        failed?: number;
+        results?: SendResult[];
+      };
+      if (!res.ok) {
+        setError(data.error ?? "Send failed.");
+        return;
+      }
+      const result = data.results?.[0];
+      if (result?.ok) {
+        setSuccess(`Email sent to ${result.businessName} (${result.email}).`);
+      } else {
+        setError(result?.error ?? "Send failed.");
+      }
+      await load();
+    } catch {
+      setError("Network error during send.");
+    } finally {
+      setSendingToId(null);
+    }
+  }
+
+  async function addUnclaimedBusiness(e: React.FormEvent) {
+    e.preventDefault();
+    setAddingBusiness(true);
+    setError("");
+    setSuccess("");
+    try {
+      const res = await fetch("/api/admin/outreach/add-business", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          businessName: addName,
+          email: addEmail,
+          gbpUrl: addGbp || undefined,
+          city: addCity,
+          state: addState,
+        }),
+      });
+      const data = (await res.json()) as {
+        error?: string;
+        business?: { id: string; name: string; email: string | null };
+      };
+      if (!res.ok) {
+        setError(data.error ?? "Could not add business.");
+        return;
+      }
+      setSuccess(`Added unclaimed: ${data.business?.name} — ready for outreach.`);
+      setAddName("");
+      setAddEmail("");
+      setAddGbp("");
+      await load();
+    } catch {
+      setError("Network error adding business.");
+    } finally {
+      setAddingBusiness(false);
+    }
+  }
+
   if (loading) {
     return <p className="text-sm text-[#717171]">Loading outreach dashboard…</p>;
   }
@@ -342,27 +448,49 @@ export function AdminOutreachClient() {
         </div>
       )}
 
+      {stats?.brevoConfigured && (
+        <div className="rounded border border-[#e0e0e0] bg-white px-4 py-3 text-sm text-[#333]">
+          <strong>Emails send from:</strong> {stats.brevoSenderName} &lt;{stats.brevoSenderEmail}&gt;
+          <span className="mx-2 text-[#ccc]">|</span>
+          <strong>Reply-to:</strong> {stats.brevoReplyTo}
+          <p className="mt-1 text-xs text-[#717171]">
+            Set <code className="rounded bg-[#f5f5f5] px-1">BREVO_SENDER_EMAIL=submityourstore@gmail.com</code> in
+            Vercel. Sender must be verified in Brevo → Senders &amp; Domains.
+          </p>
+        </div>
+      )}
+
       {stats && stats.outreachTablesReady === false && (
         <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <p>
             <strong>Outreach database tables missing.</strong>{" "}
-            {stats.outreachSetupError ??
-              "Tracking and batch send need outreach_settings + outreach_logs tables."}
+            {stats.outreachSetupError ?? "Tracking and batch send need outreach tables."}
           </p>
-          {stats.outreachCanAutoSetup ? (
-            <button
-              type="button"
-              disabled={settingUpTables}
-              onClick={() => void setupOutreachTables()}
-              className="mt-3 rounded bg-[#1274c0] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0d5a94] disabled:opacity-60"
-            >
-              {settingUpTables ? "Creating tables…" : "Create outreach tables now"}
-            </button>
-          ) : (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {stats.outreachCanAutoSetup ? (
+              <button
+                type="button"
+                disabled={settingUpTables}
+                onClick={() => void setupOutreachTables()}
+                className="rounded bg-[#1274c0] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0d5a94] disabled:opacity-60"
+              >
+                {settingUpTables ? "Creating tables…" : "Create outreach tables now"}
+              </button>
+            ) : null}
+            {stats.outreachSetupSql && (
+              <button
+                type="button"
+                onClick={() => void copySetupSql()}
+                className="rounded border border-[#1274c0] bg-white px-4 py-2 text-sm font-semibold text-[#1274c0] hover:bg-[#f0f7fd]"
+              >
+                {copiedSql ? "SQL copied!" : "Copy SQL for Supabase Editor"}
+              </button>
+            )}
+          </div>
+          {!stats.outreachCanAutoSetup && (
             <p className="mt-2 text-xs">
-              Add <strong>SUPABASE_DB_URL</strong> in Vercel (Supabase → Settings → Database → Connection
-              string URI), redeploy, then reload this page — or paste the migration SQL files in Supabase SQL
-              Editor manually.
+              Add <strong>SUPABASE_DB_PASSWORD</strong> in Vercel (Supabase → Settings → Database → database password),
+              redeploy, then click Create tables — or paste copied SQL in Supabase SQL Editor and Run.
             </p>
           )}
         </div>
@@ -542,9 +670,75 @@ export function AdminOutreachClient() {
             {previewLoading && (
               <p className="mb-2 text-xs text-[#717171]">Updating preview…</p>
             )}
-            <EmailInboxPreview subject={previewSubject || subject} html={previewHtml} />
+            <EmailInboxPreview
+              subject={previewSubject || subject}
+              html={previewHtml}
+              senderName={stats?.brevoSenderName}
+              senderEmail={stats?.brevoSenderEmail}
+            />
           </div>
         </div>
+      </section>
+
+      <section className="rounded border bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-bold text-[#111]">Add unclaimed business for outreach</h2>
+        <p className="mt-1 text-sm text-[#717171]">
+          Naya business add karo as 🟡 unclaimed — queue mein aayega aur aap seedha email bhej sakte ho.
+        </p>
+        <form onSubmit={(e) => void addUnclaimedBusiness(e)} className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <label className="text-sm">
+            <span className="font-medium">Business name *</span>
+            <input
+              required
+              value={addName}
+              onChange={(e) => setAddName(e.target.value)}
+              className="mt-1 w-full rounded border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="text-sm">
+            <span className="font-medium">Business email *</span>
+            <input
+              required
+              type="email"
+              value={addEmail}
+              onChange={(e) => setAddEmail(e.target.value)}
+              className="mt-1 w-full rounded border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="text-sm">
+            <span className="font-medium">GBP URL</span>
+            <input
+              value={addGbp}
+              onChange={(e) => setAddGbp(e.target.value)}
+              className="mt-1 w-full rounded border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="text-sm">
+            <span className="font-medium">City</span>
+            <input
+              value={addCity}
+              onChange={(e) => setAddCity(e.target.value)}
+              className="mt-1 w-full rounded border px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="text-sm">
+            <span className="font-medium">State</span>
+            <input
+              value={addState}
+              onChange={(e) => setAddState(e.target.value)}
+              className="mt-1 w-full rounded border px-3 py-2 text-sm"
+            />
+          </label>
+          <div className="flex items-end">
+            <button
+              type="submit"
+              disabled={addingBusiness}
+              className="jd-btn-primary rounded px-5 py-2.5 text-sm font-semibold disabled:opacity-60"
+            >
+              {addingBusiness ? "Adding…" : "Add as unclaimed"}
+            </button>
+          </div>
+        </form>
       </section>
 
       <section className="rounded border bg-white p-5 shadow-sm">
@@ -590,8 +784,18 @@ export function AdminOutreachClient() {
                       <span className="text-[#999]">—</span>
                     )}
                   </td>
-                  <td className="py-2 pr-3 text-[#555]">{c.email}</td>
+                  <td className="py-2 pr-3 text-[#555]">{c.email || <span className="text-red-500">No email</span>}</td>
                   <td className="py-2">
+                    {c.email && (
+                      <button
+                        type="button"
+                        disabled={sendingToId === c.id || !stats?.brevoConfigured}
+                        onClick={() => void sendToBusiness(c.id)}
+                        className="mr-2 text-sm font-semibold text-[#1274c0] hover:underline disabled:opacity-50"
+                      >
+                        {sendingToId === c.id ? "Sending…" : "Send email"}
+                      </button>
+                    )}
                     <Link href={c.claimUrl} className="mr-2 text-[#1274c0] hover:underline">
                       Claim
                     </Link>

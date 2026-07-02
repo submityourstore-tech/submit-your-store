@@ -1,15 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getAllBlogPosts, getTopBusinessesForBlog } from "@/lib/blogs.server";
+import { getBlogCityGroups } from "@/lib/blogs.server";
+import { cityLocationSlug } from "@/lib/blog-cities";
 
 export async function HomeBlogSection() {
-  const posts = getAllBlogPosts();
-  const postsWithCounts = await Promise.all(
-    posts.map(async (post) => ({
-      post,
-      count: (await getTopBusinessesForBlog(post.city, post.state, 50)).length,
-    })),
-  );
+  const cityGroups = await getBlogCityGroups();
+  const featured = cityGroups.slice(0, 6);
 
   return (
     <section className="border-t border-[#e0e0e0] bg-[#f7f7f7]">
@@ -18,37 +14,57 @@ export async function HomeBlogSection() {
           <div>
             <h2 className="text-lg font-bold text-[#111]">HVAC city guides 2026</h2>
             <p className="mt-1 text-sm text-[#717171]">
-              Best-of lists with logos, ratings, and community votes — updated as new listings are added.
+              Keyword guides for repair, replacement, residential &amp; commercial HVAC — updated as
+              listings are added.
             </p>
           </div>
           <Link href="/blog" className="text-sm font-semibold text-[#1274c0] hover:underline">
             All guides →
           </Link>
         </div>
+
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {postsWithCounts.map(({ post, count }) => (
+          {featured.map(({ city, posts, listingCount }) => {
+            const overview = posts.find((p) => p.topicId === "best-hvac-companies") ?? posts[0]!;
+            return (
+              <Link
+                key={`${city.city}-${city.state}`}
+                href={`/blog/${overview.slug}`}
+                className="group overflow-hidden rounded border border-[#e0e0e0] bg-white shadow-sm transition hover:shadow-md"
+              >
+                <div className="relative aspect-[16/9] overflow-hidden bg-[#eee]">
+                  <Image
+                    src={overview.featuredImage}
+                    alt={overview.title}
+                    fill
+                    className="object-cover transition group-hover:scale-[1.02]"
+                    sizes="(max-width: 640px) 100vw, 33vw"
+                    unoptimized
+                  />
+                </div>
+                <div className="p-4">
+                  <h3 className="font-bold text-[#1274c0] group-hover:underline">
+                    {city.city}, {city.state}
+                  </h3>
+                  <p className="mt-1 line-clamp-2 text-sm text-[#555]">{overview.description}</p>
+                  <p className="mt-2 text-xs font-medium text-[#717171]">
+                    {listingCount} listings · {posts.length} guides
+                  </p>
+                  <p className="mt-1 text-xs text-[#1274c0]">View all {city.city} guides →</p>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          {cityGroups.map(({ city, listingCount }) => (
             <Link
-              key={post.slug}
-              href={`/blog/${post.slug}`}
-              className="group overflow-hidden rounded border border-[#e0e0e0] bg-white shadow-sm transition hover:shadow-md"
+              key={`nav-${city.city}`}
+              href={`/blog#${cityLocationSlug(city)}`}
+              className="rounded border border-[#ddd] bg-white px-3 py-1 text-xs font-medium text-[#555] hover:border-[#1274c0] hover:text-[#1274c0]"
             >
-              <div className="relative aspect-[16/9] overflow-hidden bg-[#eee]">
-                <Image
-                  src={post.featuredImage}
-                  alt={post.title}
-                  fill
-                  className="object-cover transition group-hover:scale-[1.02]"
-                  sizes="(max-width: 640px) 100vw, 33vw"
-                  unoptimized
-                />
-              </div>
-              <div className="p-4">
-                <h3 className="font-bold text-[#1274c0] group-hover:underline">{post.title}</h3>
-                <p className="mt-1 line-clamp-2 text-sm text-[#555]">{post.intro}</p>
-                <p className="mt-2 text-xs font-medium text-[#717171]">
-                  📍 {post.city} · {count} companies
-                </p>
-              </div>
+              {city.city} ({listingCount})
             </Link>
           ))}
         </div>

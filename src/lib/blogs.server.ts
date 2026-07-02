@@ -1,5 +1,8 @@
+import { BLOG_CITIES } from "@/lib/blog-cities";
 import { getBlogCityBusinesses } from "@/lib/blog-businesses.server";
+import { BLOG_TOPICS, blogSlugFor, type BlogTopic } from "@/lib/blog-topics";
 import { getBusinessVoteStats, getVotesStore, voteScoreFromStore } from "@/lib/business-votes.server";
+import type { BlogCity } from "@/lib/blog-cities";
 import type { Business } from "@/types/business";
 
 export type BlogPostMeta = {
@@ -11,56 +14,107 @@ export type BlogPostMeta = {
   featuredImage: string;
   city: string;
   state: string;
+  topicId: string;
+  rankingHeading: string;
 };
 
-const BLOG_DEFINITIONS: BlogPostMeta[] = [
-  {
-    slug: "best-hvac-companies-dallas",
-    title: "Best HVAC Companies in Dallas 2026",
-    description:
-      "Compare top-rated HVAC contractors in Dallas, TX — ratings from across the web, community votes, and links to full business profiles.",
-    intro:
-      "Dallas summers are brutal on air conditioning systems, and winter cold snaps can push furnaces to their limit. Whether you need emergency AC repair in Uptown, a full system replacement in Plano, or routine maintenance before peak season, choosing the right HVAC contractor matters. This 2026 guide ranks the best HVAC companies in Dallas using overall web ratings, review volume, and community upvotes from Submit Your Store members — each listing links to a full profile with hours, phone, and verified customer reviews.",
-    conclusion:
-      "The best HVAC company for your home depends on your neighborhood, budget, and whether you need same-day emergency service or a planned installation. Use the upvote buttons to support contractors you've worked with — rankings update automatically. Always confirm licensing, insurance, and written estimates before major work, and check each company's full profile for current hours and contact details.",
-    featuredImage: "/blog/dallas.webp",
-    city: "Dallas",
-    state: "TX",
-  },
-  {
-    slug: "best-hvac-companies-houston",
-    title: "Best HVAC Companies in Houston 2026",
-    description:
-      "Find the best HVAC companies in Houston, TX with verified Google ratings, community votes, and direct links to each listing profile.",
-    intro:
-      "Houston's Gulf Coast humidity makes reliable cooling and dehumidification essential year-round. From Katy to The Woodlands, homeowners and businesses depend on HVAC contractors who respond fast during heat emergencies and understand corrosion, coil maintenance, and high-load cooling demands. Our 2026 Houston guide lists top-rated HVAC companies sorted by community votes, overall web ratings, and review counts — with logos and profile links so you can compare before you call.",
-    conclusion:
-      "Houston's sprawling metro means travel time and service area coverage vary by contractor. Vote for companies you've had great experiences with to help other homeowners find trustworthy pros. For urgent no-cool situations, check each profile's business hours and 24/7 availability before calling. New listings are added regularly as we upload fresh data across the directory.",
-    featuredImage: "/blog/houston.webp",
-    city: "Houston",
-    state: "TX",
-  },
-  {
-    slug: "best-hvac-companies-austin",
-    title: "Best HVAC Companies in Austin 2026",
-    description:
-      "Explore top HVAC contractors in Austin, TX — sorted by community votes, overall web ratings, and review volume with profile links for each business.",
-    intro:
-      "Austin's rapid growth and mixed climate — scorching summers, occasional freezes, and heavy pollen seasons — keep HVAC companies busy across Travis County and surrounding areas. This 2026 roundup highlights the best HVAC companies in Austin based on member upvotes, Google ratings aggregated across the web, and verified listing data on Submit Your Store. Each entry includes the company logo and a direct link to its full business profile.",
-    conclusion:
-      "Central Texas homeowners often prioritize energy efficiency, smart thermostats, and contractors who explain options clearly before recommending replacements. Use upvotes to recognize standout service and help rankings reflect real community preferences. Browse each profile for service areas, weekly hours in Central Time, and customer reviews before scheduling your next tune-up or repair.",
-    featuredImage: "/blog/austin.webp",
-    city: "Austin",
-    state: "TX",
-  },
-];
+/** Legacy slugs kept for existing indexed URLs. */
+const LEGACY_SLUG_ALIASES: Record<string, string> = {
+  "best-hvac-companies-dallas": "best-hvac-companies-in-dallas-tx",
+  "best-hvac-companies-houston": "best-hvac-companies-in-houston-tx",
+  "best-hvac-companies-austin": "best-hvac-companies-in-austin-tx",
+};
+
+function buildBlogPost(city: BlogCity, topic: BlogTopic): BlogPostMeta {
+  return {
+    slug: blogSlugFor(city, topic),
+    title: topic.title(city.city, city.state),
+    description: topic.description(city.city, city.state),
+    intro: topic.intro(city),
+    conclusion: topic.conclusion(city),
+    featuredImage: city.featuredImage,
+    city: city.city,
+    state: city.state,
+    topicId: topic.id,
+    rankingHeading: topic.rankingHeading(city.city, city.state),
+  };
+}
+
+function buildAllDefinitions(): BlogPostMeta[] {
+  const posts: BlogPostMeta[] = [];
+  for (const city of BLOG_CITIES) {
+    for (const topic of BLOG_TOPICS) {
+      posts.push(buildBlogPost(city, topic));
+    }
+  }
+  return posts;
+}
+
+const BLOG_DEFINITIONS = buildAllDefinitions();
 
 export function getAllBlogPosts(): BlogPostMeta[] {
   return BLOG_DEFINITIONS;
 }
 
 export function getBlogPost(slug: string): BlogPostMeta | undefined {
-  return BLOG_DEFINITIONS.find((b) => b.slug === slug);
+  const resolved = LEGACY_SLUG_ALIASES[slug] ?? slug;
+  return BLOG_DEFINITIONS.find((b) => b.slug === resolved);
+}
+
+export function getBlogPostsByCity(city: string, state: string): BlogPostMeta[] {
+  return BLOG_DEFINITIONS.filter(
+    (p) => p.city.toLowerCase() === city.trim().toLowerCase() && p.state === state.trim().toUpperCase(),
+  );
+}
+
+export function getRelatedBlogPosts(slug: string, limit = 6): BlogPostMeta[] {
+  const post = getBlogPost(slug);
+  if (!post) return [];
+
+  const sameCity = getBlogPostsByCity(post.city, post.state).filter((p) => p.slug !== post.slug);
+
+  const cityConfig = BLOG_CITIES.find(
+    (c) => c.city.toLowerCase() === post.city.toLowerCase() && c.state === post.state,
+  );
+
+  const metroPosts =
+    cityConfig?.metroHub && cityConfig.metro
+      ? getBlogPostsByCity(cityConfig.metroHub.city, cityConfig.metroHub.state)
+          .filter((p) => p.topicId === post.topicId)
+          .slice(0, 2)
+      : [];
+
+  const combined = [...sameCity, ...metroPosts];
+  const seen = new Set<string>();
+  const unique: BlogPostMeta[] = [];
+  for (const p of combined) {
+    if (seen.has(p.slug)) continue;
+    seen.add(p.slug);
+    unique.push(p);
+  }
+  return unique.slice(0, limit);
+}
+
+export type BlogCityGroup = {
+  city: BlogCity;
+  posts: BlogPostMeta[];
+  listingCount: number;
+};
+
+export async function getBlogCityGroups(): Promise<BlogCityGroup[]> {
+  const groups: BlogCityGroup[] = [];
+
+  for (const city of BLOG_CITIES) {
+    const posts = getBlogPostsByCity(city.city, city.state);
+    const businesses = await getBlogCityBusinesses(city.city, city.state);
+    groups.push({
+      city,
+      posts,
+      listingCount: businesses.length,
+    });
+  }
+
+  return groups.sort((a, b) => b.listingCount - a.listingCount);
 }
 
 export async function getTopBusinessesForBlog(city: string, state = "TX", limit = 20): Promise<Business[]> {

@@ -10,6 +10,7 @@ import { getAllBlogPosts } from "@/lib/blogs.server";
 const STATIC_PATHS = [
   "",
   "/listings",
+  "/search",
   "/list-your-business",
   "/about",
   "/contact",

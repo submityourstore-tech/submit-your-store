@@ -33,7 +33,7 @@ export default async function ListingsPage() {
           </h1>
           <p className="mt-1 text-sm text-[#717171]">{total} businesses listed worldwide</p>
           <div className="mt-5 max-w-2xl">
-            <SearchBar action={primaryVertical?.href ?? "/listings"} />
+            <SearchBar action="/search" />
           </div>
         </div>
       </div>

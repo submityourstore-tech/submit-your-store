@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { SiteLogo } from "@/components/SiteLogo";
-import { SITE_NAME } from "@/lib/site-config";
+import { SITE_NAME, SITE_WHATSAPP_DISPLAY, SITE_WHATSAPP_LINK } from "@/lib/site-config";
 
 type FooterLink = { href: string; label: string };
 
@@ -53,6 +53,14 @@ export function SiteFooter() {
               Find local businesses worldwide, read community reviews, and list your business for free by category
               and city.
             </p>
+            <a
+              href={SITE_WHATSAPP_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex items-center gap-2 rounded border border-[#25a244] bg-[#f0fdf4] px-3 py-2 text-sm font-semibold text-[#15803d] hover:bg-[#dcfce7]"
+            >
+              💬 WhatsApp {SITE_WHATSAPP_DISPLAY}
+            </a>
           </div>
 
           <FooterColumn title="Explore" links={EXPLORE_LINKS} />

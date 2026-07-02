@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
@@ -18,6 +18,7 @@ import { prefillSourceMessage } from "@/lib/prefill-messages";
 import { getDefaultListingCategoryKey } from "@/lib/categories-config";
 import { ListingCategorySelect } from "@/components/ListingCategorySelect";
 import { extractVerificationToken, formatVerifyApiError } from "@/lib/verify-messages";
+import { LISTING_CHATBOT_DRAFT_KEY, type ListingDraft } from "@/lib/listing-chatbot";
 
 type Step = "gbp" | "form" | "sent";
 
@@ -97,6 +98,43 @@ export function ListYourBusinessForm() {
   );
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
+  const [chatbotPrefillNote, setChatbotPrefillNote] = useState("");
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(LISTING_CHATBOT_DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw) as ListingDraft;
+      sessionStorage.removeItem(LISTING_CHATBOT_DRAFT_KEY);
+
+      if (draft.resolvedGbpUrl || draft.gbpUrl) {
+        setGbpUrl(draft.resolvedGbpUrl ?? draft.gbpUrl ?? "");
+      }
+      if (draft.businessName) setBusinessName(draft.businessName);
+      if (draft.businessEmail) setBusinessEmail(draft.businessEmail);
+      if (draft.phone) setPhone(draft.phone);
+      if (draft.city) setCity(draft.city);
+      if (draft.state) setState(draft.state);
+      if (draft.description) setDescription(draft.description);
+
+      const readyForForm =
+        Boolean(draft.resolvedGbpUrl || draft.gbpUrl) &&
+        Boolean(draft.businessName) &&
+        Boolean(draft.businessEmail) &&
+        Boolean(draft.phone) &&
+        Boolean(draft.description && draft.description.length >= 40);
+
+      if (readyForForm) {
+        setStep("form");
+        setCheck({ status: "available" });
+        setChatbotPrefillNote("Details from the listing assistant are pre-filled below. Sign in and submit when ready.");
+      } else if (draft.resolvedGbpUrl || draft.gbpUrl) {
+        setChatbotPrefillNote("Your Google profile link was saved from the assistant. Continue below to verify and complete your listing.");
+      }
+    } catch {
+      // ignore invalid draft
+    }
+  }, []);
 
   async function handleGbpCheck(e: React.FormEvent) {
     e.preventDefault();
@@ -419,6 +457,12 @@ export function ListYourBusinessForm() {
           <span className="break-all">{gbpUrl}</span>
         </div>
 
+        {chatbotPrefillNote && (
+          <p className="mb-4 rounded border border-[#1274c0]/30 bg-[#f0f7fd] px-3 py-2 text-sm text-[#333]">
+            {chatbotPrefillNote}
+          </p>
+        )}
+
         {isClaim && (
           <div className="mb-4 rounded border border-[#1274c0] bg-[#f0f7fd] px-4 py-3 text-sm text-[#0d5a94]">
             This profile is already listed as{" "}
@@ -585,6 +629,11 @@ export function ListYourBusinessForm() {
   return (
     <form onSubmit={handleGbpCheck} className="rounded border border-[#e0e0e0] bg-white p-6 shadow-sm">
       <h2 className="text-lg font-bold text-[#111]">Google Business Profile link *</h2>
+      {chatbotPrefillNote && (
+        <p className="mt-2 rounded border border-[#1274c0]/30 bg-[#f0f7fd] px-3 py-2 text-sm text-[#333]">
+          {chatbotPrefillNote}
+        </p>
+      )}
       <p className="mt-1 text-sm text-[#717171]">
         Paste the link from Google Business Profile → <strong>Share</strong> → <strong>Copy link</strong>{" "}
         (maps.app.goo.gl, g.page, or google.com/maps). We fetch your address from it automatically.

@@ -1,5 +1,6 @@
 -- Critical security fix: enable RLS on site_users (passwords / emails were publicly exposed)
 ALTER TABLE IF EXISTS public.site_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.site_users FORCE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Service role manages site users" ON public.site_users;
 CREATE POLICY "Service role manages site users"

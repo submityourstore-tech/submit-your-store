@@ -26,9 +26,14 @@ export const SUPPORT_EMAIL = "support@submityourstore.com";
 export const OUTREACH_SENDER_EMAIL = "submityourstore@gmail.com";
 export const OUTREACH_REPLY_TO_EMAIL = "submityourstore@gmail.com";
 
+/** Site-wide WhatsApp support */
+export const SITE_WHATSAPP_DISPLAY = "+91 62837 33278";
+export const SITE_WHATSAPP_NUMBER = "916283733278";
+export const SITE_WHATSAPP_LINK = "https://wa.me/916283733278";
+
 /** WhatsApp shown in unclaimed outreach emails */
-export const OUTREACH_WHATSAPP_DISPLAY = "+91 62837 33278";
-export const OUTREACH_WHATSAPP_LINK = "https://wa.me/916283733278";
+export const OUTREACH_WHATSAPP_DISPLAY = SITE_WHATSAPP_DISPLAY;
+export const OUTREACH_WHATSAPP_LINK = SITE_WHATSAPP_LINK;
 
 export const LEGAL_ENTITY = "Submit Your Store";
 

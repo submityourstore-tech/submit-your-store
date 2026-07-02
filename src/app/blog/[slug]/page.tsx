@@ -2,20 +2,24 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BlogArticleJsonLd } from "@/components/BlogArticleJsonLd";
+import { BlogAuthorBio } from "@/components/BlogAuthorBio";
 import { BlogCommentSection } from "@/components/BlogCommentSection";
 import { BlogRankedBusinessCard } from "@/components/BlogRankedBusinessCard";
 import { BlogRelatedGuides } from "@/components/BlogRelatedGuides";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { getCommentsForBlog } from "@/lib/blog-comments.server";
-import { getBlogCity, cityLocationSlug } from "@/lib/blog-cities";
+import { getBlogCity } from "@/lib/blog-cities";
 import { getVoteStatsForBusinesses, getVotesStore } from "@/lib/business-votes.server";
 import {
+  cityLocationSlug,
   getAllBlogPosts,
   getBlogPost,
   getRelatedBlogPosts,
   getTopBusinessesForBlog,
 } from "@/lib/blogs.server";
 import { getCurrentUser } from "@/lib/user-auth.server";
+import { getSiteUrl } from "@/lib/site-config";
 import { sitePageMetadata } from "@/lib/seo";
 
 type PageProps = {
@@ -23,20 +27,28 @@ type PageProps = {
 };
 
 export async function generateStaticParams() {
-  const posts = getAllBlogPosts();
-  const legacy = [
-    { slug: "best-hvac-companies-dallas" },
-    { slug: "best-hvac-companies-houston" },
-    { slug: "best-hvac-companies-austin" },
-  ];
-  return [...posts.map((post) => ({ slug: post.slug })), ...legacy];
+  return getAllBlogPosts().map((post) => ({ slug: post.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const post = getBlogPost(slug);
   if (!post) return { title: "Article not found" };
-  return sitePageMetadata(post.title, post.description);
+
+  const canonical = `${getSiteUrl()}/blog/${post.slug}`;
+
+  return {
+    ...sitePageMetadata(post.title, post.description),
+    alternates: { canonical },
+    openGraph: {
+      title: post.title,
+      description: post.description,
+      type: "article",
+      publishedTime: post.publishedAt,
+      modifiedTime: post.updatedAt,
+      url: canonical,
+    },
+  };
 }
 
 export default async function BlogPostPage({ params }: PageProps) {
@@ -56,13 +68,18 @@ export default async function BlogPostPage({ params }: PageProps) {
 
   return (
     <div className="bg-white">
+      <BlogArticleJsonLd post={post} />
+
       <div className="mx-auto max-w-3xl px-4 py-8 pb-12">
         <Breadcrumbs
           items={[
             { label: "Home", href: "/" },
             { label: "Blog", href: "/blog" },
-            { label: `${post.city}, ${post.state}`, href: `/blog#${cityConfig ? cityLocationSlug(cityConfig) : `${post.city.toLowerCase()}-${post.state.toLowerCase()}`}` },
-            { label: post.title },
+            {
+              label: `${post.city}, ${post.state}`,
+              href: cityConfig ? `/blog#${cityLocationSlug(cityConfig)}` : "/blog",
+            },
+            { label: post.city },
           ]}
         />
 
@@ -81,7 +98,7 @@ export default async function BlogPostPage({ params }: PageProps) {
           <h1 className="mt-5 text-2xl font-bold text-[#111] sm:text-3xl">{post.title}</h1>
           <p className="mt-3 text-base leading-relaxed text-[#555]">{post.description}</p>
           <p className="mt-2 text-xs font-medium text-[#717171]">
-            📍 {post.city}, {post.state} · Updated for 2026
+            📍 {post.city}, {post.state} · Updated {post.updatedAt} · By Navjeet Kamboj
           </p>
         </header>
 
@@ -91,9 +108,16 @@ export default async function BlogPostPage({ params }: PageProps) {
             <p className="mt-3 text-sm leading-relaxed text-[#555] sm:text-base">{post.intro}</p>
           </section>
 
-          <p className="mt-6 text-xs text-[#717171]">
-            ⭐ Rankings combine community upvotes with overall Google ratings and review volume. Each
-            company links to its full profile with logo, hours, and customer reviews.
+          {post.sections.map((section) => (
+            <section key={section.id} className="mt-8" id={section.id}>
+              <h2 className="text-lg font-bold text-[#1274c0]">{section.heading}</h2>
+              <p className="mt-3 text-sm leading-relaxed text-[#555] sm:text-base">{section.body}</p>
+            </section>
+          ))}
+
+          <p className="mt-8 text-xs text-[#717171]">
+            ⭐ Rankings combine community upvotes with Google ratings and review volume. Each company
+            links to its full profile with logo, hours, and customer reviews.
           </p>
 
           {businesses.length === 0 ? (
@@ -132,8 +156,9 @@ export default async function BlogPostPage({ params }: PageProps) {
             <p className="mt-3 text-sm leading-relaxed text-[#555] sm:text-base">{post.conclusion}</p>
           </section>
 
+          <BlogAuthorBio />
+
           <BlogRelatedGuides
-            currentSlug={post.slug}
             city={post.city}
             state={post.state}
             relatedPosts={relatedPosts}

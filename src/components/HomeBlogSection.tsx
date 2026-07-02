@@ -14,8 +14,7 @@ export async function HomeBlogSection() {
           <div>
             <h2 className="text-lg font-bold text-[#111]">HVAC city guides 2026</h2>
             <p className="mt-1 text-sm text-[#717171]">
-              Keyword guides for repair, replacement, residential &amp; commercial HVAC — updated as
-              listings are added.
+              One expert guide per city — repair, replacement, residential &amp; commercial HVAC.
             </p>
           </div>
           <Link href="/blog" className="text-sm font-semibold text-[#1274c0] hover:underline">
@@ -25,17 +24,19 @@ export async function HomeBlogSection() {
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {featured.map(({ city, posts, listingCount }) => {
-            const overview = posts.find((p) => p.topicId === "best-hvac-companies") ?? posts[0]!;
+            const post = posts[0];
+            if (!post) return null;
+
             return (
               <Link
                 key={`${city.city}-${city.state}`}
-                href={`/blog/${overview.slug}`}
+                href={`/blog/${post.slug}`}
                 className="group overflow-hidden rounded border border-[#e0e0e0] bg-white shadow-sm transition hover:shadow-md"
               >
                 <div className="relative aspect-[16/9] overflow-hidden bg-[#eee]">
                   <Image
-                    src={overview.featuredImage}
-                    alt={overview.title}
+                    src={post.featuredImage}
+                    alt={post.title}
                     fill
                     className="object-cover transition group-hover:scale-[1.02]"
                     sizes="(max-width: 640px) 100vw, 33vw"
@@ -46,11 +47,10 @@ export async function HomeBlogSection() {
                   <h3 className="font-bold text-[#1274c0] group-hover:underline">
                     {city.city}, {city.state}
                   </h3>
-                  <p className="mt-1 line-clamp-2 text-sm text-[#555]">{overview.description}</p>
+                  <p className="mt-1 line-clamp-2 text-sm text-[#555]">{post.description}</p>
                   <p className="mt-2 text-xs font-medium text-[#717171]">
-                    {listingCount} listings · {posts.length} guides
+                    {listingCount} listings · Full city guide
                   </p>
-                  <p className="mt-1 text-xs text-[#1274c0]">View all {city.city} guides →</p>
                 </div>
               </Link>
             );

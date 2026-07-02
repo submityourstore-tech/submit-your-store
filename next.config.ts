@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { blogRedirects } from "./src/lib/blog-redirects";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["playwright", "sharp", "firebase-admin"],
@@ -12,7 +13,14 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "lh3.googleusercontent.com",
       },
+      {
+        protocol: "https",
+        hostname: "media.licdn.com",
+      },
     ],
+  },
+  async redirects() {
+    return blogRedirects();
   },
   outputFileTracingIncludes: {
     "/api/listings/check": ["./data/businesses.json"],

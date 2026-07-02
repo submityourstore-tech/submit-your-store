@@ -38,3 +38,13 @@ export const OUTREACH_WHATSAPP_LINK = SITE_WHATSAPP_LINK;
 export const LEGAL_ENTITY = "Submit Your Store";
 
 export const LAST_UPDATED_LEGAL = "June 14, 2026";
+
+/** Editorial author for blog guides (E-E-A-T). */
+export const SITE_AUTHOR = {
+  name: "Navjeet Kamboj",
+  role: "Founder & Local SEO Editor",
+  bio: "Navjeet Kamboj builds and edits local business guides on Submit Your Store. He focuses on helpful, accurate city rankings backed by real listings, Google ratings, and community votes — not paid placements.",
+  image:
+    "https://media.licdn.com/dms/image/v2/D5603AQFU53xqpal5og/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1707375061524?e=2147483647&v=beta&t=bNfsBWWDsVU5NlGIEeVMHCjqsKP9uGPbTMn6LsdG_bo",
+  linkedin: "https://www.linkedin.com/in/navjeet-kamboj",
+} as const;

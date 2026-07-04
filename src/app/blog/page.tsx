@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { ContentPageLayout } from "@/components/ContentPageLayout";
+import { BlogBannerImage } from "@/components/BlogBannerImage";
 import { BlogAuthorBio } from "@/components/BlogAuthorBio";
 import { getBlogCityGroups } from "@/lib/blogs.server";
 import { sitePageMetadata } from "@/lib/seo";
@@ -51,13 +51,11 @@ export default async function BlogIndexPage() {
               <article className="overflow-hidden rounded border border-[#e0e0e0] bg-white shadow-sm">
                 <Link href={`/blog/${post.slug}`} className="group block">
                   <div className="relative aspect-[16/7] w-full overflow-hidden bg-[#f0f0f0]">
-                    <Image
+                    <BlogBannerImage
                       src={post.featuredImage}
                       alt={post.title}
-                      fill
-                      className="object-cover transition group-hover:scale-[1.02]"
-                      sizes="(max-width: 768px) 100vw, 720px"
-                      unoptimized
+                      className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+                      priority
                     />
                   </div>
                   <div className="p-5">

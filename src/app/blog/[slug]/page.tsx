@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
+import { BlogBannerImage } from "@/components/BlogBannerImage";
 import { notFound } from "next/navigation";
 import { BlogArticleJsonLd } from "@/components/BlogArticleJsonLd";
 import { BlogAuthorBio } from "@/components/BlogAuthorBio";
@@ -89,14 +89,11 @@ export default async function BlogPostPage({ params }: PageProps) {
 
         <header className="mt-4 border-b border-[#e0e0e0] pb-6">
           <div className="overflow-hidden rounded-lg border border-[#e0e0e0] shadow-sm">
-            <Image
+            <BlogBannerImage
               src={post.featuredImage}
               alt={post.title}
-              width={768}
-              height={432}
               className="h-auto w-full object-cover"
               priority
-              unoptimized
             />
           </div>
           <h1 className="mt-5 text-2xl font-bold text-[#111] sm:text-3xl">{post.title}</h1>

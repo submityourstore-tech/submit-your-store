@@ -20,6 +20,7 @@ import {
 } from "@/lib/blogs.server";
 import { getCurrentUser } from "@/lib/user-auth.server";
 import { getSiteUrl } from "@/lib/site-config";
+import { blogBannerUrl } from "@/lib/blog-banner";
 import { sitePageMetadata } from "@/lib/seo";
 
 type PageProps = {
@@ -36,6 +37,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!post) return { title: "Article not found" };
 
   const canonical = `${getSiteUrl()}/blog/${post.slug}`;
+  const cityConfig = getBlogCity(post.city, post.state);
+  const ogImage = cityConfig ? blogBannerUrl(cityConfig) : `${getSiteUrl()}${post.featuredImage}`;
 
   return {
     ...sitePageMetadata(post.title, post.description),
@@ -47,6 +50,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       publishedTime: post.publishedAt,
       modifiedTime: post.updatedAt,
       url: canonical,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: post.title }],
     },
   };
 }

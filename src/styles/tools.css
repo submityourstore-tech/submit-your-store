@@ -1,0 +1,37 @@
+/* SEO Tools framework styles */
+
+@media print {
+  .tools-framework nav,
+  .tools-framework button,
+  .tools-framework select,
+  .tools-framework input[type="search"],
+  .tools-framework label:has(input[type="file"]) {
+    display: none !important;
+  }
+
+  .tools-framework table {
+    font-size: 10px;
+  }
+
+  .tools-framework .sticky {
+    position: static;
+  }
+}
+
+/* Dark mode tokens */
+.dark {
+  --jd-bg: #0f1117;
+  --jd-surface: #1a1d27;
+  --jd-border: #2a2d3a;
+  --jd-muted: #9ca3af;
+  --jd-text: #f3f4f6;
+}
+
+.dark body {
+  background: var(--jd-bg);
+  color: var(--jd-text);
+}
+
+.dark .tools-framework {
+  color: var(--jd-text);
+}

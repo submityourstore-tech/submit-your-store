@@ -1,4 +1,5 @@
 import { BLOG_CITIES, cityLocationSlug, type BlogCity } from "@/lib/blog-cities";
+import { blogBannerPath } from "@/lib/blog-banner";
 import { buildCityGuideContent, type BlogContentSection } from "@/lib/blog-content";
 import { getBlogCityBusinesses } from "@/lib/blog-businesses.server";
 import { mainCityGuideSlug } from "@/lib/blog-redirects";
@@ -33,7 +34,7 @@ function buildCityGuide(city: BlogCity): BlogPostMeta {
     conclusion: content.conclusion,
     rankingHeading: content.rankingHeading,
     sections: content.sections,
-    featuredImage: city.featuredImage,
+    featuredImage: blogBannerPath(city),
     city: city.city,
     state: city.state,
     publishedAt: GUIDE_PUBLISHED,

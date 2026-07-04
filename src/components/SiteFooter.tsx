@@ -23,6 +23,7 @@ function FooterColumn({ title, links }: { title: string; links: FooterLink[] }) 
 
 const EXPLORE_LINKS: FooterLink[] = [
   { href: "/listings", label: "Listings" },
+  { href: "/tools", label: "Free SEO Tools" },
   { href: "/how-it-works", label: "How it works" },
   { href: "/faq", label: "FAQ" },
   { href: "/list-your-business", label: "Free Listing" },

@@ -5,6 +5,7 @@ import { AppProviders } from "@/components/AppProviders";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import "./globals.css";
+import "@/styles/tools.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

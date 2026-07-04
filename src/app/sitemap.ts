@@ -6,6 +6,7 @@ import { isActiveBusiness } from "@/lib/categories-config";
 import { getLocationStats } from "@/lib/locations";
 import { getSiteUrl } from "@/lib/site-config";
 import { getAllBlogPosts } from "@/lib/blogs.server";
+import { SEO_TOOLS } from "@/lib/tools/registry";
 
 const STATIC_PATHS = [
   "",
@@ -17,6 +18,7 @@ const STATIC_PATHS = [
   "/how-it-works",
   "/faq",
   "/blog",
+  "/tools",
   "/privacy-policy",
   "/terms-of-service",
   "/cookie-policy",
@@ -70,5 +72,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.65,
   }));
 
-  return [...staticEntries, ...businessEntries, ...verticalEntries, ...blogEntries];
+  const toolEntries: MetadataRoute.Sitemap = SEO_TOOLS.map((tool) => ({
+    url: `${base}/tools/${tool.slug}`,
+    lastModified: now,
+    changeFrequency: "monthly" as const,
+    priority: 0.55,
+  }));
+
+  return [...staticEntries, ...businessEntries, ...verticalEntries, ...blogEntries, ...toolEntries];
 }

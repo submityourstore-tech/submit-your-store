@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BlogBannerImage } from "@/components/BlogBannerImage";
+import { BlogCityBanner } from "@/components/BlogCityBanner";
 import { notFound } from "next/navigation";
 import { BlogArticleJsonLd } from "@/components/BlogArticleJsonLd";
 import { BlogAuthorBio } from "@/components/BlogAuthorBio";
@@ -89,11 +89,12 @@ export default async function BlogPostPage({ params }: PageProps) {
 
         <header className="mt-4 border-b border-[#e0e0e0] pb-6">
           <div className="overflow-hidden rounded-lg border border-[#e0e0e0] shadow-sm">
-            <BlogBannerImage
-              src={post.featuredImage}
-              alt={post.title}
-              className="h-auto w-full object-cover"
-              priority
+            <BlogCityBanner
+              city={post.city}
+              state={post.state}
+              slug={cityConfig?.slug ?? post.city.toLowerCase().replace(/\s+/g, "-")}
+              title={post.title}
+              className="h-auto w-full"
             />
           </div>
           <h1 className="mt-5 text-2xl font-bold text-[#111] sm:text-3xl">{post.title}</h1>

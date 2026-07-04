@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BlogBannerImage } from "@/components/BlogBannerImage";
+import { BlogCityBannerFromConfig } from "@/components/BlogCityBanner";
 import { getBlogCityGroups } from "@/lib/blogs.server";
 import { cityLocationSlug } from "@/lib/blog-cities";
 
@@ -34,10 +34,10 @@ export async function HomeBlogSection() {
                 className="group overflow-hidden rounded border border-[#e0e0e0] bg-white shadow-sm transition hover:shadow-md"
               >
                 <div className="relative aspect-[16/9] overflow-hidden bg-[#eee]">
-                  <BlogBannerImage
-                    src={post.featuredImage}
-                    alt={post.title}
-                    className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+                  <BlogCityBannerFromConfig
+                    city={city}
+                    title={post.title}
+                    className="h-full w-full transition group-hover:scale-[1.02]"
                   />
                 </div>
                 <div className="p-4">

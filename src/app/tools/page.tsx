@@ -2,59 +2,111 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/tools/ToolHeader";
 import { SEO_TOOLS } from "@/lib/tools/registry";
+import { UTILITY_TOOL_CATEGORIES, getUtilityToolsByCategory } from "@/lib/tools/utility-registry";
 import { sitePageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = sitePageMetadata(
-  "Free SEO Tools — Website Analysis & Bulk URL Checkers",
-  "Professional SEO tools for bulk URL analysis: HTTP status, redirects, SSL, WHOIS, meta tags, robots.txt, sitemaps, and page speed. Up to 500 URLs per scan.",
+  "100+ Free Online Tools — SEO, Schema, Text, Image, Business & More",
+  "Free online tools for SEO meta tags, schema markup, text analysis, image processing, business generators, calculators, and developer utilities. No signup required.",
 );
 
 export default function ToolsIndexPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <PageHeader
-        title="SEO & Website Analysis Tools"
-        subtitle="Bulk URL checkers built for agencies and marketers. Paste, upload, or drag & drop up to 500 URLs. Export to CSV, Excel, or JSON."
+        title="Free Online Tools"
+        subtitle="100+ free tools for SEO, schema markup, text analysis, image processing, business documents, and more. No signup. No limits on most tools."
         breadcrumbs={[
           { label: "Home", href: "/" },
-          { label: "SEO Tools" },
+          { label: "Tools" },
         ]}
       />
 
-      <div className="mb-8 rounded-lg border border-[var(--jd-border)] bg-[var(--jd-surface)] p-4 text-sm">
-        <strong>Platform:</strong> Each tool shares the same input, progress tracking, results table,
-        and export engine. Add new tools by registering a checker — no duplicate UI code.
-      </div>
+      {/* URL Scanner Tools */}
+      <section className="mb-10">
+        <div className="mb-4 flex items-center gap-2">
+          <span className="text-2xl">🌐</span>
+          <div>
+            <h2 className="text-lg font-bold text-[#111]">Website Analysis</h2>
+            <p className="text-sm text-[#717171]">Bulk URL scanners — check up to 500 URLs at once</p>
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {SEO_TOOLS.map((tool) => (
+            <Link
+              key={tool.slug}
+              href={`/tools/${tool.slug}`}
+              className="group rounded-lg border border-[#e0e0e0] bg-white p-4 shadow-sm transition hover:border-[#1274c0] hover:shadow-md"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xl">{tool.icon}</span>
+                {tool.available ? (
+                  <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-green-700">
+                    Live
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-[#f7f7f7] px-2 py-0.5 text-[10px] font-semibold uppercase text-[#717171]">
+                    Soon
+                  </span>
+                )}
+              </div>
+              <h3 className="mt-2 font-bold text-[#1274c0] group-hover:underline">{tool.name}</h3>
+              <p className="mt-1 text-xs leading-relaxed text-[#717171]">{tool.description}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {SEO_TOOLS.map((tool) => (
-          <Link
-            key={tool.slug}
-            href={`/tools/${tool.slug}`}
-            className="group rounded-lg border border-[var(--jd-border)] bg-white p-5 shadow-sm transition hover:border-[var(--jd-blue)] hover:shadow-md dark:bg-[var(--jd-bg)]"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-2xl" aria-hidden>
-                {tool.icon}
-              </span>
-              {tool.available ? (
-                <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-green-700 dark:bg-green-950 dark:text-green-300">
-                  Live
-                </span>
-              ) : (
-                <span className="rounded-full bg-[var(--jd-surface)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--jd-muted)]">
-                  Coming soon
-                </span>
-              )}
+      {/* Utility Tool Categories */}
+      {UTILITY_TOOL_CATEGORIES.map((cat) => {
+        const tools = getUtilityToolsByCategory(cat.id);
+        if (tools.length === 0) return null;
+
+        return (
+          <section key={cat.id} className="mb-10" id={cat.id}>
+            <div className="mb-4 flex items-center gap-2">
+              <span className="text-2xl">{cat.icon}</span>
+              <div>
+                <h2 className="text-lg font-bold text-[#111]">{cat.label}</h2>
+                <p className="text-sm text-[#717171]">{cat.description}</p>
+              </div>
             </div>
-            <h2 className="mt-2 text-lg font-bold text-[var(--jd-blue)] group-hover:underline">
-              {tool.name}
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed text-[var(--jd-muted)]">{tool.description}</p>
-            <p className="mt-3 text-xs text-[var(--jd-muted)]">{tool.keywords.slice(0, 3).join(" · ")}</p>
-          </Link>
-        ))}
-      </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {tools.map((tool) => (
+                <Link
+                  key={tool.slug}
+                  href={`/tools/${tool.slug}`}
+                  className="group rounded-lg border border-[#e0e0e0] bg-white p-4 shadow-sm transition hover:border-[#1274c0] hover:shadow-md"
+                >
+                  <span className="text-xl">{tool.icon}</span>
+                  <h3 className="mt-1.5 text-sm font-bold text-[#1274c0] group-hover:underline">
+                    {tool.name}
+                  </h3>
+                  <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[#717171]">
+                    {tool.description}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        );
+      })}
+
+      {/* Category jump nav */}
+      <nav className="mt-8 rounded border border-[#e0e0e0] bg-[#f7f7f7] p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-[#717171]">Jump to category</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {UTILITY_TOOL_CATEGORIES.map((cat) => (
+            <a
+              key={cat.id}
+              href={`#${cat.id}`}
+              className="rounded border border-[#ddd] bg-white px-3 py-1 text-xs font-medium text-[#333] hover:border-[#1274c0] hover:text-[#1274c0]"
+            >
+              {cat.icon} {cat.label}
+            </a>
+          ))}
+        </div>
+      </nav>
     </div>
   );
 }

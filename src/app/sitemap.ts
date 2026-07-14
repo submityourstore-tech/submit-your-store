@@ -7,6 +7,7 @@ import { getLocationStats } from "@/lib/locations";
 import { getSiteUrl } from "@/lib/site-config";
 import { getAllBlogPosts } from "@/lib/blogs.server";
 import { SEO_TOOLS } from "@/lib/tools/registry";
+import { getAllUtilityTools } from "@/lib/tools/utility-registry";
 
 const STATIC_PATHS = [
   "",
@@ -79,5 +80,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.55,
   }));
 
-  return [...staticEntries, ...businessEntries, ...verticalEntries, ...blogEntries, ...toolEntries];
+  const utilityToolEntries: MetadataRoute.Sitemap = getAllUtilityTools().map((tool) => ({
+    url: `${base}/tools/${tool.slug}`,
+    lastModified: now,
+    changeFrequency: "monthly" as const,
+    priority: 0.5,
+  }));
+
+  return [...staticEntries, ...businessEntries, ...verticalEntries, ...blogEntries, ...toolEntries, ...utilityToolEntries];
 }

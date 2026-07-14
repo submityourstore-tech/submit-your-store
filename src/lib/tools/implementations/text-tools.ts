@@ -490,7 +490,139 @@ export const caseConverter: { transformFn: TransformFn } = {
   },
 };
 
-// ── 15. SERP Snippet Preview ──────────────────────────────────────────────
+// ── 15. text-to-html ──────────────────────────────────────────────────────
+
+export const textToHtml: { transformFn: TransformFn } = {
+  transformFn(input) {
+    if (!input.trim()) return "";
+
+    const escaped = input
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+
+    const paragraphs = escaped.split(/\n\s*\n/);
+    return paragraphs
+      .map((p) => {
+        const withBr = p.trim().replace(/\n/g, "<br>\n");
+        return `<p>${withBr}</p>`;
+      })
+      .join("\n\n");
+  },
+};
+
+// ── 16. html-to-text ──────────────────────────────────────────────────────
+
+export const htmlToText: { transformFn: TransformFn } = {
+  transformFn(input) {
+    if (!input.trim()) return "";
+
+    let text = input;
+    text = text.replace(/<br\s*\/?>/gi, "\n");
+    text = text.replace(/<\/p>\s*<p[^>]*>/gi, "\n\n");
+    text = text.replace(/<\/div>\s*<div[^>]*>/gi, "\n");
+    text = text.replace(/<\/h[1-6]>/gi, "\n\n");
+    text = text.replace(/<li[^>]*>/gi, "• ");
+    text = text.replace(/<\/li>/gi, "\n");
+    text = text.replace(/<[^>]+>/g, "");
+    text = text.replace(/&amp;/g, "&");
+    text = text.replace(/&lt;/g, "<");
+    text = text.replace(/&gt;/g, ">");
+    text = text.replace(/&quot;/g, '"');
+    text = text.replace(/&#39;/g, "'");
+    text = text.replace(/&nbsp;/g, " ");
+    text = text.replace(/\n{3,}/g, "\n\n");
+    return text.trim();
+  },
+};
+
+// ── 17. word-frequency-counter ────────────────────────────────────────────
+
+export const wordFrequencyCounter: { analyzeFn: AnalyzeFn } = {
+  analyzeFn(text) {
+    const words = getWords(text).map((w) => w.toLowerCase());
+    if (words.length === 0) return [{ label: "Result", value: "No words found" }];
+
+    const freq = new Map<string, number>();
+    for (const w of words) {
+      if (w.length < 2) continue;
+      freq.set(w, (freq.get(w) ?? 0) + 1);
+    }
+
+    const sorted = Array.from(freq.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 20);
+
+    const results: AnalyzeResult = [
+      { label: "Total Words", value: words.length },
+      { label: "Unique Words", value: freq.size },
+      { label: "── Top 20 Words ──", value: "" },
+    ];
+
+    for (const [word, count] of sorted) {
+      const pct = ((count / words.length) * 100).toFixed(1);
+      results.push({ label: word, value: `${count}× (${pct}%)` });
+    }
+
+    return results;
+  },
+};
+
+// ── 18. text-diff-checker ─────────────────────────────────────────────────
+
+export const textDiffChecker: { fields: GenFields; generate: GenerateFn } = {
+  fields: [
+    { key: "text1", label: "Original Text", type: "textarea", placeholder: "Paste the original text here…", required: true, rows: 8 },
+    { key: "text2", label: "Modified Text", type: "textarea", placeholder: "Paste the modified text here…", required: true, rows: 8 },
+  ],
+  generate(v) {
+    const lines1 = (v.text1 || "").split("\n");
+    const lines2 = (v.text2 || "").split("\n");
+    const maxLen = Math.max(lines1.length, lines2.length);
+
+    if (!v.text1?.trim() && !v.text2?.trim()) {
+      return "<p>Please enter text in both fields to compare.</p>";
+    }
+
+    const rows: string[] = [];
+    let additions = 0;
+    let deletions = 0;
+    let unchanged = 0;
+
+    for (let i = 0; i < maxLen; i++) {
+      const l1 = i < lines1.length ? lines1[i] : undefined;
+      const l2 = i < lines2.length ? lines2[i] : undefined;
+
+      const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+      if (l1 === l2) {
+        unchanged++;
+        rows.push(`<div style="padding:2px 8px;font-family:monospace;font-size:13px;white-space:pre-wrap;color:#333;background:#fff;border-bottom:1px solid #f0f0f0;"><span style="color:#999;margin-right:8px;">${i + 1}</span>${esc(l1 ?? "")}</div>`);
+      } else {
+        if (l1 !== undefined) {
+          deletions++;
+          rows.push(`<div style="padding:2px 8px;font-family:monospace;font-size:13px;white-space:pre-wrap;color:#b31d28;background:#ffeef0;border-bottom:1px solid #f0f0f0;"><span style="color:#999;margin-right:8px;">${i + 1}</span><strong>−</strong> ${esc(l1)}</div>`);
+        }
+        if (l2 !== undefined) {
+          additions++;
+          rows.push(`<div style="padding:2px 8px;font-family:monospace;font-size:13px;white-space:pre-wrap;color:#22863a;background:#e6ffec;border-bottom:1px solid #f0f0f0;"><span style="color:#999;margin-right:8px;">${i + 1}</span><strong>+</strong> ${esc(l2)}</div>`);
+        }
+      }
+    }
+
+    return `<div style="font-family:system-ui,sans-serif;max-width:800px;">
+  <div style="display:flex;gap:16px;margin-bottom:16px;font-size:13px;">
+    <span style="color:#22863a;font-weight:600;">+${additions} additions</span>
+    <span style="color:#b31d28;font-weight:600;">−${deletions} deletions</span>
+    <span style="color:#666;">${unchanged} unchanged</span>
+  </div>
+  <div style="border:1px solid #e0e0e0;border-radius:6px;overflow:hidden;">${rows.join("")}</div>
+</div>`;
+  },
+};
+
+// ── 19. SERP Snippet Preview ──────────────────────────────────────────────
 
 type GenFields = { key: string; label: string; type: string; placeholder?: string; defaultValue?: string | number | boolean; options?: { value: string; label: string }[]; required?: boolean; rows?: number }[];
 type GenerateFn = (values: Record<string, string>) => string;

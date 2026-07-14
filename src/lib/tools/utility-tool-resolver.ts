@@ -14,6 +14,9 @@ import {
   openGraphGenerator,
   twitterCardGenerator,
   hreflangTagGenerator,
+  googleIndexChecker,
+  pageSpeedChecker,
+  mobileFriendlyTest,
 } from "@/lib/tools/implementations/seo-meta";
 
 /* ---------- Schema Generators ---------- */
@@ -54,6 +57,10 @@ import {
   serpSnippetPreview,
   randomTextGenerator,
   loremIpsumGenerator,
+  textToHtml,
+  htmlToText,
+  wordFrequencyCounter,
+  textDiffChecker,
 } from "@/lib/tools/implementations/text-tools";
 
 /* ---------- Dev Utilities ---------- */
@@ -77,6 +84,11 @@ import {
   qrCodeGenerator,
   barcodeGenerator,
   emojiPicker,
+  urlEncoderDecoder,
+  htmlEntityEncoder,
+  colorPaletteGenerator,
+  regexTester,
+  cronExpressionGenerator,
 } from "@/lib/tools/implementations/dev-utilities";
 
 /* ---------- Business Tools ---------- */
@@ -134,6 +146,10 @@ import {
   gstCalculator,
   profitMarginCalculator,
   discountCalculator,
+  ageCalculator,
+  bmiCalculator,
+  emiCalculator,
+  tipCalculator,
 } from "@/lib/tools/implementations/calculators";
 
 export type ToolImplKind = "generator" | "counter" | "text-transform" | "calculator" | "image-processor";
@@ -176,6 +192,9 @@ const TOOL_MAP: Record<string, ToolImpl> = {
   "open-graph-generator": gen(openGraphGenerator),
   "twitter-card-generator": gen(twitterCardGenerator),
   "hreflang-tag-generator": gen(hreflangTagGenerator),
+  "google-index-checker": gen(googleIndexChecker, "html"),
+  "page-speed-checker": gen(pageSpeedChecker, "html"),
+  "mobile-friendly-test": gen(mobileFriendlyTest, "html"),
 
   // Schema
   "local-business-schema-generator": gen(localBusinessSchemaGenerator),
@@ -203,6 +222,12 @@ const TOOL_MAP: Record<string, ToolImpl> = {
   "line-counter": counter(lineCounter),
   "sentence-counter": counter(sentenceCounter),
   "paragraph-counter": counter(paragraphCounter),
+
+  // Text new tools
+  "word-frequency-counter": counter(wordFrequencyCounter),
+  "text-to-html": textTransform(textToHtml),
+  "html-to-text": textTransform(htmlToText),
+  "text-diff-checker": gen(textDiffChecker, "html"),
 
   // Text transforms
   "url-slug-generator": textTransform(urlSlugGenerator),
@@ -241,6 +266,11 @@ const TOOL_MAP: Record<string, ToolImpl> = {
   "qr-code-generator": gen(qrCodeGenerator, "html"),
   "barcode-generator": gen(barcodeGenerator, "html"),
   "emoji-picker": textTransform(emojiPicker),
+  "url-encoder-decoder": textTransform(urlEncoderDecoder),
+  "html-entity-encoder": textTransform(htmlEntityEncoder),
+  "color-palette-generator": gen(colorPaletteGenerator, "html"),
+  "regex-tester": gen(regexTester, "html"),
+  "cron-expression-generator": gen(cronExpressionGenerator, "html"),
 
   // Business generators
   "business-name-generator": gen(businessNameGenerator, "text"),
@@ -290,6 +320,10 @@ const TOOL_MAP: Record<string, ToolImpl> = {
   "gst-calculator": calc(gstCalculator),
   "profit-margin-calculator": calc(profitMarginCalculator),
   "discount-calculator": calc(discountCalculator),
+  "age-calculator": calc(ageCalculator),
+  "bmi-calculator": calc(bmiCalculator),
+  "emi-calculator": calc(emiCalculator),
+  "tip-calculator": calc(tipCalculator),
 };
 
 export function resolveToolImpl(slug: string): ToolImpl | undefined {

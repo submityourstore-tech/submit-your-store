@@ -717,6 +717,324 @@ function generateCode128SVG(data: string, barWidth: number, height: number): str
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${height}" viewBox="0 0 ${totalWidth} ${height}" style="max-width:100%;">${bars}</svg>`;
 }
 
+// ── 20. url-encoder-decoder ────────────────────────────────────────────────
+
+export const urlEncoderDecoder: { transformFn: TransformFn } = {
+  transformFn(input, options = {}) {
+    const mode = options.mode ?? "encode";
+    try {
+      if (mode === "decode") {
+        return decodeURIComponent(input);
+      }
+      return encodeURIComponent(input);
+    } catch {
+      return `⚠ Could not ${mode} the input. Check for invalid characters.`;
+    }
+  },
+};
+
+// ── 21. html-entity-encoder ───────────────────────────────────────────────
+
+export const htmlEntityEncoder: { transformFn: TransformFn } = {
+  transformFn(input, options = {}) {
+    const mode = options.mode ?? "encode";
+    if (mode === "decode") {
+      return input
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&apos;/g, "'")
+        .replace(/&nbsp;/g, " ")
+        .replace(/&#(\d+);/g, (_, num) => String.fromCharCode(parseInt(num)))
+        .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+    }
+    return input
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  },
+};
+
+// ── 22. color-palette-generator ───────────────────────────────────────────
+
+function hslToHex(h: number, s: number, l: number): string {
+  s /= 100;
+  l /= 100;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color).toString(16).padStart(2, "0");
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
+
+function hexToHSL(hex: string): [number, number, number] {
+  let h = hex.replace(/^#/, "");
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  const r = parseInt(h.slice(0, 2), 16) / 255;
+  const g = parseInt(h.slice(2, 4), 16) / 255;
+  const b = parseInt(h.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if (max === min) return [0, 0, Math.round(l * 100)];
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let hue = 0;
+  if (max === r) hue = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+  else if (max === g) hue = ((b - r) / d + 2) / 6;
+  else hue = ((r - g) / d + 4) / 6;
+  return [Math.round(hue * 360), Math.round(s * 100), Math.round(l * 100)];
+}
+
+export const colorPaletteGenerator: { fields: GenFields; generate: GenerateFn } = {
+  fields: [
+    { key: "baseColor", label: "Base Color", type: "color", defaultValue: "#3b82f6", required: true },
+  ],
+  generate(v) {
+    const base = v.baseColor || "#3b82f6";
+    const [h, s, l] = hexToHSL(base);
+
+    const schemes: { name: string; colors: { hex: string; label: string }[] }[] = [
+      {
+        name: "Complementary",
+        colors: [
+          { hex: base, label: "Base" },
+          { hex: hslToHex((h + 180) % 360, s, l), label: "Complement" },
+        ],
+      },
+      {
+        name: "Analogous",
+        colors: [
+          { hex: hslToHex((h + 330) % 360, s, l), label: "-30°" },
+          { hex: base, label: "Base" },
+          { hex: hslToHex((h + 30) % 360, s, l), label: "+30°" },
+        ],
+      },
+      {
+        name: "Triadic",
+        colors: [
+          { hex: base, label: "Base" },
+          { hex: hslToHex((h + 120) % 360, s, l), label: "+120°" },
+          { hex: hslToHex((h + 240) % 360, s, l), label: "+240°" },
+        ],
+      },
+      {
+        name: "Split-Complementary",
+        colors: [
+          { hex: base, label: "Base" },
+          { hex: hslToHex((h + 150) % 360, s, l), label: "+150°" },
+          { hex: hslToHex((h + 210) % 360, s, l), label: "+210°" },
+        ],
+      },
+      {
+        name: "Shades",
+        colors: [
+          { hex: hslToHex(h, s, Math.min(l + 30, 95)), label: "Lighter" },
+          { hex: hslToHex(h, s, Math.min(l + 15, 90)), label: "Light" },
+          { hex: base, label: "Base" },
+          { hex: hslToHex(h, s, Math.max(l - 15, 10)), label: "Dark" },
+          { hex: hslToHex(h, s, Math.max(l - 30, 5)), label: "Darker" },
+        ],
+      },
+    ];
+
+    const schemesHtml = schemes.map((scheme) => {
+      const swatches = scheme.colors.map((c) =>
+        `<div style="text-align:center;">
+          <div style="width:60px;height:60px;background:${c.hex};border-radius:8px;border:1px solid #e0e0e0;"></div>
+          <div style="font-size:11px;color:#333;margin-top:4px;font-weight:600;">${c.hex}</div>
+          <div style="font-size:10px;color:#999;">${c.label}</div>
+        </div>`
+      ).join("");
+      return `<div style="margin-bottom:20px;">
+        <h4 style="margin:0 0 8px;font-size:14px;color:#333;">${scheme.name}</h4>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">${swatches}</div>
+      </div>`;
+    }).join("");
+
+    return `<div style="font-family:system-ui,sans-serif;padding:16px;">${schemesHtml}</div>`;
+  },
+};
+
+// ── 23. regex-tester ──────────────────────────────────────────────────────
+
+export const regexTester: { fields: GenFields; generate: GenerateFn } = {
+  fields: [
+    { key: "pattern", label: "Regex Pattern", type: "text", placeholder: "e.g. \\b\\w+@\\w+\\.\\w+\\b", required: true },
+    { key: "testString", label: "Test String", type: "textarea", placeholder: "Enter text to test against…", required: true, rows: 6 },
+    { key: "flags", label: "Flags", type: "text", placeholder: "g", defaultValue: "g" },
+  ],
+  generate(v) {
+    const pattern = v.pattern || "";
+    const testStr = v.testString || "";
+    const flags = v.flags || "g";
+
+    if (!pattern.trim()) return "<p>Please enter a regex pattern.</p>";
+    if (!testStr.trim()) return "<p>Please enter a test string.</p>";
+
+    try {
+      const regex = new RegExp(pattern, flags);
+      const matches: { match: string; index: number }[] = [];
+      let m;
+      const searchRegex = new RegExp(pattern, flags.includes("g") ? flags : flags + "g");
+      while ((m = searchRegex.exec(testStr)) !== null) {
+        matches.push({ match: m[0], index: m.index });
+        if (!searchRegex.global) break;
+      }
+
+      const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+      let highlighted = "";
+      let lastIdx = 0;
+      for (const mt of matches) {
+        highlighted += esc(testStr.slice(lastIdx, mt.index));
+        highlighted += `<mark style="background:#fef08a;padding:1px 2px;border-radius:2px;">${esc(mt.match)}</mark>`;
+        lastIdx = mt.index + mt.match.length;
+      }
+      highlighted += esc(testStr.slice(lastIdx));
+
+      const matchList = matches.length > 0
+        ? matches.slice(0, 50).map((mt, i) => `<tr><td style="padding:4px 8px;border-bottom:1px solid #eee;color:#666;font-size:12px;">${i + 1}</td><td style="padding:4px 8px;border-bottom:1px solid #eee;font-family:monospace;font-size:13px;">${esc(mt.match)}</td><td style="padding:4px 8px;border-bottom:1px solid #eee;color:#999;font-size:12px;">${mt.index}</td></tr>`).join("")
+        : "";
+
+      return `<div style="font-family:system-ui,sans-serif;max-width:800px;">
+  <div style="margin-bottom:16px;padding:4px 8px;background:#f8f9fa;border-radius:4px;font-size:12px;color:#666;">
+    Pattern: <code style="color:#d63384;">/${esc(pattern)}/</code>${flags} · <strong>${matches.length}</strong> match${matches.length !== 1 ? "es" : ""} found
+  </div>
+  <div style="padding:12px;background:#fff;border:1px solid #e0e0e0;border-radius:6px;font-family:monospace;font-size:13px;white-space:pre-wrap;line-height:1.6;max-height:300px;overflow-y:auto;">${highlighted}</div>
+  ${matchList ? `<table style="width:100%;margin-top:16px;border-collapse:collapse;"><thead><tr><th style="padding:4px 8px;text-align:left;border-bottom:2px solid #ddd;font-size:12px;color:#666;">#</th><th style="padding:4px 8px;text-align:left;border-bottom:2px solid #ddd;font-size:12px;color:#666;">Match</th><th style="padding:4px 8px;text-align:left;border-bottom:2px solid #ddd;font-size:12px;color:#666;">Index</th></tr></thead><tbody>${matchList}</tbody></table>` : ""}
+</div>`;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return `<div style="color:red;padding:12px;">⚠️ Invalid regex: ${msg}</div>`;
+    }
+  },
+};
+
+// ── 24. cron-expression-generator ─────────────────────────────────────────
+
+export const cronExpressionGenerator: { fields: GenFields; generate: GenerateFn } = {
+  fields: [
+    {
+      key: "minute", label: "Minute", type: "select", defaultValue: "*",
+      options: [
+        { value: "*", label: "Every minute (*)" },
+        { value: "0", label: "0" }, { value: "5", label: "5" }, { value: "10", label: "10" },
+        { value: "15", label: "15" }, { value: "20", label: "20" }, { value: "30", label: "30" },
+        { value: "45", label: "45" }, { value: "*/5", label: "Every 5 min (*/5)" },
+        { value: "*/10", label: "Every 10 min (*/10)" }, { value: "*/15", label: "Every 15 min (*/15)" },
+        { value: "*/30", label: "Every 30 min (*/30)" },
+      ],
+    },
+    {
+      key: "hour", label: "Hour", type: "select", defaultValue: "*",
+      options: [
+        { value: "*", label: "Every hour (*)" },
+        { value: "0", label: "0 (midnight)" }, { value: "1", label: "1" }, { value: "2", label: "2" },
+        { value: "3", label: "3" }, { value: "6", label: "6" }, { value: "8", label: "8" },
+        { value: "9", label: "9" }, { value: "12", label: "12 (noon)" }, { value: "17", label: "17" },
+        { value: "18", label: "18" }, { value: "21", label: "21" }, { value: "23", label: "23" },
+        { value: "*/2", label: "Every 2 hours (*/2)" }, { value: "*/6", label: "Every 6 hours (*/6)" },
+        { value: "*/12", label: "Every 12 hours (*/12)" },
+      ],
+    },
+    {
+      key: "dayOfMonth", label: "Day of Month", type: "select", defaultValue: "*",
+      options: [
+        { value: "*", label: "Every day (*)" },
+        { value: "1", label: "1st" }, { value: "15", label: "15th" },
+        { value: "1,15", label: "1st and 15th" }, { value: "L", label: "Last day (L)" },
+      ],
+    },
+    {
+      key: "month", label: "Month", type: "select", defaultValue: "*",
+      options: [
+        { value: "*", label: "Every month (*)" },
+        { value: "1", label: "January" }, { value: "2", label: "February" }, { value: "3", label: "March" },
+        { value: "4", label: "April" }, { value: "5", label: "May" }, { value: "6", label: "June" },
+        { value: "7", label: "July" }, { value: "8", label: "August" }, { value: "9", label: "September" },
+        { value: "10", label: "October" }, { value: "11", label: "November" }, { value: "12", label: "December" },
+        { value: "*/3", label: "Every 3 months (*/3)" },
+      ],
+    },
+    {
+      key: "dayOfWeek", label: "Day of Week", type: "select", defaultValue: "*",
+      options: [
+        { value: "*", label: "Every day (*)" },
+        { value: "0", label: "Sunday" }, { value: "1", label: "Monday" }, { value: "2", label: "Tuesday" },
+        { value: "3", label: "Wednesday" }, { value: "4", label: "Thursday" }, { value: "5", label: "Friday" },
+        { value: "6", label: "Saturday" }, { value: "1-5", label: "Weekdays (Mon-Fri)" },
+        { value: "0,6", label: "Weekends (Sat-Sun)" },
+      ],
+    },
+  ],
+  generate(v) {
+    const min = v.minute || "*";
+    const hour = v.hour || "*";
+    const dom = v.dayOfMonth || "*";
+    const month = v.month || "*";
+    const dow = v.dayOfWeek || "*";
+    const cron = `${min} ${hour} ${dom} ${month} ${dow}`;
+
+    const monthNames = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+    const parts: string[] = [];
+
+    if (min === "*") parts.push("Every minute");
+    else if (min.startsWith("*/")) parts.push(`Every ${min.slice(2)} minutes`);
+    else parts.push(`At minute ${min}`);
+
+    if (hour === "*") parts.push("of every hour");
+    else if (hour.startsWith("*/")) parts.push(`every ${hour.slice(2)} hours`);
+    else parts.push(`at ${hour}:00`);
+
+    if (dom !== "*") {
+      if (dom === "L") parts.push("on the last day of the month");
+      else parts.push(`on day ${dom}`);
+    }
+
+    if (month !== "*") {
+      if (month.startsWith("*/")) parts.push(`every ${month.slice(2)} months`);
+      else {
+        const mNames = month.split(",").map((m) => monthNames[parseInt(m)] || m).join(", ");
+        parts.push(`in ${mNames}`);
+      }
+    }
+
+    if (dow !== "*") {
+      if (dow === "1-5") parts.push("on weekdays");
+      else if (dow === "0,6") parts.push("on weekends");
+      else {
+        const dNames = dow.split(",").map((d) => dayNames[parseInt(d)] || d).join(", ");
+        parts.push(`on ${dNames}`);
+      }
+    }
+
+    const description = parts.join(" ");
+
+    return `<div style="font-family:system-ui,sans-serif;max-width:600px;padding:16px;">
+  <div style="background:#1e293b;color:#e2e8f0;padding:16px 20px;border-radius:8px;font-family:monospace;font-size:20px;letter-spacing:2px;text-align:center;">${cron}</div>
+  <div style="margin-top:16px;padding:14px;background:#f0fdf4;border:1px solid #86efac;border-radius:6px;">
+    <p style="margin:0;font-size:14px;color:#166534;"><strong>Schedule:</strong> ${description}</p>
+  </div>
+  <table style="width:100%;margin-top:16px;border-collapse:collapse;font-size:13px;">
+    <tr><td style="padding:6px 8px;border-bottom:1px solid #eee;color:#666;font-weight:600;width:40%;">Field</td><td style="padding:6px 8px;border-bottom:1px solid #eee;color:#333;">Value</td></tr>
+    <tr><td style="padding:6px 8px;border-bottom:1px solid #eee;color:#666;">Minute</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-family:monospace;">${min}</td></tr>
+    <tr><td style="padding:6px 8px;border-bottom:1px solid #eee;color:#666;">Hour</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-family:monospace;">${hour}</td></tr>
+    <tr><td style="padding:6px 8px;border-bottom:1px solid #eee;color:#666;">Day of Month</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-family:monospace;">${dom}</td></tr>
+    <tr><td style="padding:6px 8px;border-bottom:1px solid #eee;color:#666;">Month</td><td style="padding:6px 8px;border-bottom:1px solid #eee;font-family:monospace;">${month}</td></tr>
+    <tr><td style="padding:6px 8px;color:#666;">Day of Week</td><td style="padding:6px 8px;font-family:monospace;">${dow}</td></tr>
+  </table>
+</div>`;
+  },
+};
+
 export const emojiPicker: { transformFn: TransformFn } = {
   transformFn(_input, options = {}) {
     const search = (options.search ?? "").toLowerCase();

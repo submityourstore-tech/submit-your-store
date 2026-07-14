@@ -599,6 +599,127 @@ export const hreflangTagGenerator: GeneratorToolConfig = {
 };
 
 // ---------------------------------------------------------------------------
+// 10. Google Index Checker
+// ---------------------------------------------------------------------------
+
+export const googleIndexChecker: GeneratorToolConfig = {
+  fields: [
+    {
+      key: "url",
+      label: "URL to Check",
+      type: "url",
+      placeholder: "https://example.com/my-page",
+      required: true,
+    },
+  ],
+  generate(values) {
+    const { url } = values;
+    if (!url?.trim()) return "<!-- Please enter a URL to check -->";
+
+    const checkUrl = `https://www.google.com/search?q=site:${encodeURIComponent(url.trim())}`;
+
+    return `<div style="font-family:system-ui,sans-serif;max-width:600px;padding:20px;">
+  <h3 style="margin:0 0 12px;color:#1a73e8;">Google Index Check</h3>
+  <p style="margin:0 0 16px;color:#555;font-size:14px;line-height:1.6;">
+    Click the link below to check if <strong>${escapeHtml(url.trim())}</strong> is indexed by Google.
+    If results appear, your page is indexed. If you see "No results found", the page is not yet indexed.
+  </p>
+  <a href="${escapeAttr(checkUrl)}" target="_blank" rel="noopener noreferrer"
+     style="display:inline-block;padding:10px 20px;background:#1a73e8;color:white;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;">
+    Check Index Status on Google →
+  </a>
+  <div style="margin-top:20px;padding:14px;background:#f8f9fa;border-radius:6px;border:1px solid #e0e0e0;">
+    <p style="margin:0;font-size:13px;color:#666;"><strong>Search query used:</strong></p>
+    <code style="display:block;margin-top:6px;font-size:13px;color:#333;word-break:break-all;">site:${escapeHtml(url.trim())}</code>
+  </div>
+  <div style="margin-top:16px;padding:12px;background:#fff3cd;border-radius:6px;border:1px solid #ffc107;">
+    <p style="margin:0;font-size:12px;color:#856404;"><strong>💡 Tips:</strong> New pages can take days to weeks to be indexed. Use Google Search Console to request indexing faster.</p>
+  </div>
+</div>`;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// 11. Page Speed Insights Link
+// ---------------------------------------------------------------------------
+
+export const pageSpeedChecker: GeneratorToolConfig = {
+  fields: [
+    {
+      key: "url",
+      label: "URL to Analyze",
+      type: "url",
+      placeholder: "https://example.com",
+      required: true,
+    },
+  ],
+  generate(values) {
+    const { url } = values;
+    if (!url?.trim()) return "<!-- Please enter a URL to analyze -->";
+
+    const checkUrl = `https://pagespeed.web.dev/analysis?url=${encodeURIComponent(url.trim())}`;
+
+    return `<div style="font-family:system-ui,sans-serif;max-width:600px;padding:20px;">
+  <h3 style="margin:0 0 12px;color:#1a73e8;">PageSpeed Insights</h3>
+  <p style="margin:0 0 16px;color:#555;font-size:14px;line-height:1.6;">
+    Analyze the performance, accessibility, best practices, and SEO of <strong>${escapeHtml(url.trim())}</strong> using Google PageSpeed Insights.
+  </p>
+  <a href="${escapeAttr(checkUrl)}" target="_blank" rel="noopener noreferrer"
+     style="display:inline-block;padding:10px 20px;background:#1a73e8;color:white;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;">
+    Run PageSpeed Analysis →
+  </a>
+  <div style="margin-top:20px;padding:14px;background:#f8f9fa;border-radius:6px;border:1px solid #e0e0e0;">
+    <p style="margin:0;font-size:13px;color:#666;"><strong>Direct link:</strong></p>
+    <a href="${escapeAttr(checkUrl)}" target="_blank" rel="noopener" style="display:block;margin-top:6px;font-size:12px;color:#1a73e8;word-break:break-all;">${escapeHtml(checkUrl)}</a>
+  </div>
+  <div style="margin-top:16px;padding:12px;background:#d4edda;border-radius:6px;border:1px solid #28a745;">
+    <p style="margin:0;font-size:12px;color:#155724;"><strong>💡 Tip:</strong> Aim for a score of 90+ on all four categories. Focus on Core Web Vitals (LCP, FID, CLS) for the biggest SEO impact.</p>
+  </div>
+</div>`;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// 12. Mobile Friendly Test
+// ---------------------------------------------------------------------------
+
+export const mobileFriendlyTest: GeneratorToolConfig = {
+  fields: [
+    {
+      key: "url",
+      label: "URL to Test",
+      type: "url",
+      placeholder: "https://example.com",
+      required: true,
+    },
+  ],
+  generate(values) {
+    const { url } = values;
+    if (!url?.trim()) return "<!-- Please enter a URL to test -->";
+
+    const checkUrl = `https://search.google.com/test/mobile-friendly?url=${encodeURIComponent(url.trim())}`;
+
+    return `<div style="font-family:system-ui,sans-serif;max-width:600px;padding:20px;">
+  <h3 style="margin:0 0 12px;color:#1a73e8;">Mobile-Friendly Test</h3>
+  <p style="margin:0 0 16px;color:#555;font-size:14px;line-height:1.6;">
+    Test whether <strong>${escapeHtml(url.trim())}</strong> is mobile-friendly according to Google's standards.
+  </p>
+  <a href="${escapeAttr(checkUrl)}" target="_blank" rel="noopener noreferrer"
+     style="display:inline-block;padding:10px 20px;background:#1a73e8;color:white;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;">
+    Run Mobile-Friendly Test →
+  </a>
+  <div style="margin-top:20px;padding:14px;background:#f8f9fa;border-radius:6px;border:1px solid #e0e0e0;">
+    <p style="margin:0;font-size:13px;color:#666;"><strong>Direct link:</strong></p>
+    <a href="${escapeAttr(checkUrl)}" target="_blank" rel="noopener" style="display:block;margin-top:6px;font-size:12px;color:#1a73e8;word-break:break-all;">${escapeHtml(checkUrl)}</a>
+  </div>
+  <div style="margin-top:16px;padding:12px;background:#d4edda;border-radius:6px;border:1px solid #28a745;">
+    <p style="margin:0;font-size:12px;color:#155724;"><strong>💡 Tip:</strong> Google uses mobile-first indexing, meaning the mobile version of your site is what gets indexed and ranked.</p>
+  </div>
+</div>`;
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 

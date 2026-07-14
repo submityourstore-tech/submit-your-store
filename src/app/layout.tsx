@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppProviders } from "@/components/AppProviders";
+import { BackToTop } from "@/components/BackToTop";
+import { CookieConsent } from "@/components/CookieConsent";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import "./globals.css";
@@ -55,6 +57,8 @@ export default function RootLayout({
           <main className="min-h-[calc(100vh-8rem)]">{children}</main>
           <SiteFooter />
         </AppProviders>
+        <BackToTop />
+        <CookieConsent />
       </body>
     </html>
   );

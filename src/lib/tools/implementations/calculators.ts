@@ -294,3 +294,243 @@ export const discountCalculator: CalculatorToolExport = {
     ];
   },
 };
+
+// ---------------------------------------------------------------------------
+// 5. Age Calculator
+// ---------------------------------------------------------------------------
+
+export const ageCalculator: CalculatorToolExport = {
+  fields: [
+    {
+      key: "birthDate",
+      label: "Birth Date (YYYY-MM-DD)",
+      type: "text",
+      placeholder: "e.g. 1990-06-15",
+      required: true,
+    },
+  ],
+  calculate(values) {
+    const birth = new Date(values.birthDate);
+    if (isNaN(birth.getTime())) {
+      return [{ label: "Error", value: "Please enter a valid date in YYYY-MM-DD format." }];
+    }
+
+    const now = new Date();
+    if (birth > now) {
+      return [{ label: "Error", value: "Birth date cannot be in the future." }];
+    }
+
+    let years = now.getFullYear() - birth.getFullYear();
+    let months = now.getMonth() - birth.getMonth();
+    let days = now.getDate() - birth.getDate();
+
+    if (days < 0) {
+      months--;
+      const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+      days += prevMonth.getDate();
+    }
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
+
+    const totalDays = Math.floor((now.getTime() - birth.getTime()) / (1000 * 60 * 60 * 24));
+    const totalWeeks = Math.floor(totalDays / 7);
+    const totalMonths = years * 12 + months;
+
+    const nextBirthday = new Date(now.getFullYear(), birth.getMonth(), birth.getDate());
+    if (nextBirthday <= now) {
+      nextBirthday.setFullYear(nextBirthday.getFullYear() + 1);
+    }
+    const daysUntilBirthday = Math.ceil((nextBirthday.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    return [
+      { label: "Age", value: `${years} years, ${months} months, ${days} days` },
+      { label: "Total months", value: fmt(totalMonths, 0) },
+      { label: "Total weeks", value: fmt(totalWeeks, 0) },
+      { label: "Total days", value: fmt(totalDays, 0) },
+      { label: "Next birthday in", value: `${daysUntilBirthday} days` },
+      { label: "Born on", value: birth.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) },
+    ];
+  },
+};
+
+// ---------------------------------------------------------------------------
+// 6. BMI Calculator
+// ---------------------------------------------------------------------------
+
+export const bmiCalculator: CalculatorToolExport = {
+  fields: [
+    {
+      key: "weight",
+      label: "Weight (kg)",
+      type: "number",
+      placeholder: "e.g. 70",
+      required: true,
+    },
+    {
+      key: "height",
+      label: "Height (cm)",
+      type: "number",
+      placeholder: "e.g. 175",
+      required: true,
+    },
+  ],
+  calculate(values) {
+    const weight = parseFloat(values.weight);
+    const height = parseFloat(values.height);
+
+    if (isNaN(weight) || weight <= 0) {
+      return [{ label: "Error", value: "Please enter a valid weight in kilograms." }];
+    }
+    if (isNaN(height) || height <= 0) {
+      return [{ label: "Error", value: "Please enter a valid height in centimeters." }];
+    }
+
+    const heightM = height / 100;
+    const bmi = weight / (heightM * heightM);
+
+    let category: string;
+    if (bmi < 18.5) category = "Underweight";
+    else if (bmi < 25) category = "Normal weight";
+    else if (bmi < 30) category = "Overweight";
+    else if (bmi < 35) category = "Obese (Class I)";
+    else if (bmi < 40) category = "Obese (Class II)";
+    else category = "Obese (Class III)";
+
+    const normalLow = (18.5 * heightM * heightM).toFixed(1);
+    const normalHigh = (24.9 * heightM * heightM).toFixed(1);
+
+    return [
+      { label: "BMI", value: fmt(bmi) },
+      { label: "Category", value: category },
+      { label: "Healthy weight range", value: `${normalLow} – ${normalHigh} kg` },
+      { label: "Weight", value: `${fmt(weight)} kg` },
+      { label: "Height", value: `${fmt(height, 0)} cm (${fmt(heightM)} m)` },
+    ];
+  },
+};
+
+// ---------------------------------------------------------------------------
+// 7. Loan EMI Calculator
+// ---------------------------------------------------------------------------
+
+export const emiCalculator: CalculatorToolExport = {
+  fields: [
+    {
+      key: "principal",
+      label: "Loan Amount",
+      type: "number",
+      placeholder: "e.g. 500000",
+      required: true,
+    },
+    {
+      key: "rate",
+      label: "Annual Interest Rate (%)",
+      type: "number",
+      placeholder: "e.g. 8.5",
+      required: true,
+    },
+    {
+      key: "tenure",
+      label: "Tenure (months)",
+      type: "number",
+      placeholder: "e.g. 60",
+      required: true,
+    },
+  ],
+  calculate(values) {
+    const principal = parseFloat(values.principal);
+    const annualRate = parseFloat(values.rate);
+    const tenure = parseInt(values.tenure);
+
+    if (isNaN(principal) || principal <= 0) {
+      return [{ label: "Error", value: "Please enter a valid loan amount." }];
+    }
+    if (isNaN(annualRate) || annualRate < 0) {
+      return [{ label: "Error", value: "Please enter a valid interest rate." }];
+    }
+    if (isNaN(tenure) || tenure <= 0) {
+      return [{ label: "Error", value: "Please enter a valid tenure in months." }];
+    }
+
+    let emi: number;
+    if (annualRate === 0) {
+      emi = principal / tenure;
+    } else {
+      const monthlyRate = annualRate / 12 / 100;
+      emi = (principal * monthlyRate * Math.pow(1 + monthlyRate, tenure)) / (Math.pow(1 + monthlyRate, tenure) - 1);
+    }
+
+    const totalPayment = emi * tenure;
+    const totalInterest = totalPayment - principal;
+
+    return [
+      { label: "Monthly EMI", value: `₹${currency(emi)}` },
+      { label: "Total interest", value: `₹${currency(totalInterest)}` },
+      { label: "Total payment", value: `₹${currency(totalPayment)}` },
+      { label: "Loan amount", value: `₹${currency(principal)}` },
+      { label: "Interest rate", value: `${fmt(annualRate)}% per annum` },
+      { label: "Tenure", value: `${tenure} months (${fmt(tenure / 12)} years)` },
+    ];
+  },
+};
+
+// ---------------------------------------------------------------------------
+// 8. Tip Calculator
+// ---------------------------------------------------------------------------
+
+export const tipCalculator: CalculatorToolExport = {
+  fields: [
+    {
+      key: "billAmount",
+      label: "Bill Amount",
+      type: "number",
+      placeholder: "e.g. 85.50",
+      required: true,
+    },
+    {
+      key: "tipPercent",
+      label: "Tip Percentage (%)",
+      type: "number",
+      placeholder: "e.g. 15",
+      required: true,
+    },
+    {
+      key: "splitBetween",
+      label: "Split Between (people)",
+      type: "number",
+      placeholder: "e.g. 2",
+      required: true,
+    },
+  ],
+  calculate(values) {
+    const bill = parseFloat(values.billAmount);
+    const tipPct = parseFloat(values.tipPercent);
+    const split = parseInt(values.splitBetween);
+
+    if (isNaN(bill) || bill < 0) {
+      return [{ label: "Error", value: "Please enter a valid bill amount." }];
+    }
+    if (isNaN(tipPct) || tipPct < 0) {
+      return [{ label: "Error", value: "Please enter a valid tip percentage." }];
+    }
+    if (isNaN(split) || split < 1) {
+      return [{ label: "Error", value: "Please enter at least 1 person for splitting." }];
+    }
+
+    const tipAmount = (bill * tipPct) / 100;
+    const total = bill + tipAmount;
+    const perPerson = total / split;
+    const tipPerPerson = tipAmount / split;
+
+    return [
+      { label: "Tip amount", value: `$${currency(tipAmount)}` },
+      { label: "Total (bill + tip)", value: `$${currency(total)}` },
+      { label: "Per person total", value: `$${currency(perPerson)}` },
+      { label: "Per person tip", value: `$${currency(tipPerPerson)}` },
+      { label: "Bill amount", value: `$${currency(bill)}` },
+      { label: "Tip percentage", value: `${fmt(tipPct)}%` },
+    ];
+  },
+};

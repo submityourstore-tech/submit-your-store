@@ -58,7 +58,7 @@ export const UTILITY_TOOL_CATEGORIES: {
 
 export const UTILITY_TOOLS: UtilityToolDefinition[] = [
   // ---------------------------------------------------------------------------
-  // SEO Meta (9 tools)
+  // SEO Meta (12 tools)
   // ---------------------------------------------------------------------------
   {
     slug: "meta-title-generator",
@@ -140,6 +140,34 @@ export const UTILITY_TOOLS: UtilityToolDefinition[] = [
     category: "seo-meta",
     toolType: "generator",
     keywords: ["hreflang", "multilingual seo", "international seo", "language tags"],
+  },
+
+  {
+    slug: "google-index-checker",
+    name: "Google Index Checker",
+    description: "Check if a URL is indexed by Google. Generates a search link to quickly verify whether your page appears in Google's index.",
+    icon: "🔎",
+    category: "seo-meta",
+    toolType: "generator",
+    keywords: ["google index", "index checker", "site indexed", "google search"],
+  },
+  {
+    slug: "page-speed-checker",
+    name: "Page Speed Insights Link",
+    description: "Generate a direct link to Google PageSpeed Insights for any URL. Quickly check your site's performance, accessibility, and SEO scores.",
+    icon: "⚡",
+    category: "seo-meta",
+    toolType: "generator",
+    keywords: ["page speed", "pagespeed insights", "site speed", "performance test"],
+  },
+  {
+    slug: "mobile-friendly-test",
+    name: "Mobile Friendly Test",
+    description: "Generate a link to Google's mobile-friendly test for any URL. Check if your website is optimized for mobile devices.",
+    icon: "📱",
+    category: "seo-meta",
+    toolType: "generator",
+    keywords: ["mobile friendly", "mobile test", "responsive test", "mobile optimization"],
   },
 
   // ---------------------------------------------------------------------------
@@ -282,7 +310,7 @@ export const UTILITY_TOOLS: UtilityToolDefinition[] = [
   },
 
   // ---------------------------------------------------------------------------
-  // Text & Content (17 tools)
+  // Text & Content (21 tools)
   // ---------------------------------------------------------------------------
   {
     slug: "keyword-density-checker",
@@ -436,6 +464,43 @@ export const UTILITY_TOOLS: UtilityToolDefinition[] = [
     category: "text-content",
     toolType: "generator",
     keywords: ["lorem ipsum", "placeholder text", "dummy text", "filler text"],
+  },
+
+  {
+    slug: "text-to-html",
+    name: "Text to HTML Converter",
+    description: "Convert plain text to HTML markup. Automatically wraps paragraphs in <p> tags and converts line breaks to <br> tags.",
+    icon: "🔄",
+    category: "text-content",
+    toolType: "text-transform",
+    keywords: ["text to html", "convert html", "plain text", "html markup"],
+  },
+  {
+    slug: "html-to-text",
+    name: "HTML to Text Converter",
+    description: "Strip HTML tags and convert markup to clean plain text. Remove all formatting while preserving readable content.",
+    icon: "📃",
+    category: "text-content",
+    toolType: "text-transform",
+    keywords: ["html to text", "strip html", "remove tags", "plain text"],
+  },
+  {
+    slug: "word-frequency-counter",
+    name: "Word Frequency Counter",
+    description: "Analyze text to find the most frequently used words. Shows the top 20 words ranked by occurrence count.",
+    icon: "📊",
+    category: "text-content",
+    toolType: "counter",
+    keywords: ["word frequency", "word count", "text analysis", "common words"],
+  },
+  {
+    slug: "text-diff-checker",
+    name: "Text Diff Checker",
+    description: "Compare two blocks of text and highlight differences line by line. Quickly spot additions, deletions, and changes between versions.",
+    icon: "🔍",
+    category: "text-content",
+    toolType: "generator",
+    keywords: ["text diff", "compare text", "diff checker", "text comparison"],
   },
 
   // ---------------------------------------------------------------------------
@@ -681,7 +746,7 @@ export const UTILITY_TOOLS: UtilityToolDefinition[] = [
   },
 
   // ---------------------------------------------------------------------------
-  // Dev Utilities (19 tools)
+  // Dev Utilities (24 tools)
   // ---------------------------------------------------------------------------
   {
     slug: "html-minifier",
@@ -855,6 +920,52 @@ export const UTILITY_TOOLS: UtilityToolDefinition[] = [
     keywords: ["rgb to hex", "color converter", "rgb color", "hex value"],
   },
 
+  {
+    slug: "url-encoder-decoder",
+    name: "URL Encoder/Decoder",
+    description: "Encode or decode URLs using encodeURIComponent and decodeURIComponent. Handle special characters in URLs safely.",
+    icon: "🔗",
+    category: "dev-utilities",
+    toolType: "text-transform",
+    keywords: ["url encode", "url decode", "uri component", "percent encoding"],
+  },
+  {
+    slug: "html-entity-encoder",
+    name: "HTML Entity Encoder",
+    description: "Encode special characters to HTML entities and decode them back. Prevent XSS and display special characters safely in HTML.",
+    icon: "🔣",
+    category: "dev-utilities",
+    toolType: "text-transform",
+    keywords: ["html entities", "encode html", "special characters", "entity encoder"],
+  },
+  {
+    slug: "color-palette-generator",
+    name: "Color Palette Generator",
+    description: "Generate complementary, analogous, and triadic color palettes from a base color. Preview swatches with hex codes ready to use.",
+    icon: "🎨",
+    category: "dev-utilities",
+    toolType: "generator",
+    keywords: ["color palette", "color scheme", "complementary colors", "color generator"],
+  },
+  {
+    slug: "regex-tester",
+    name: "Regex Tester",
+    description: "Test regular expressions against text and see matches highlighted. Supports global, case-insensitive, and multiline flags.",
+    icon: "🧪",
+    category: "dev-utilities",
+    toolType: "generator",
+    keywords: ["regex tester", "regular expression", "pattern match", "regex test"],
+  },
+  {
+    slug: "cron-expression-generator",
+    name: "Cron Expression Generator",
+    description: "Build cron expressions with an easy-to-use interface. Get the cron string and a human-readable description of the schedule.",
+    icon: "⏲️",
+    category: "dev-utilities",
+    toolType: "generator",
+    keywords: ["cron expression", "cron job", "schedule", "cron generator"],
+  },
+
   // ---------------------------------------------------------------------------
   // Image Tools (10 tools)
   // ---------------------------------------------------------------------------
@@ -959,7 +1070,7 @@ export const UTILITY_TOOLS: UtilityToolDefinition[] = [
   },
 
   // ---------------------------------------------------------------------------
-  // Calculators (4 tools)
+  // Calculators (8 tools)
   // ---------------------------------------------------------------------------
   {
     slug: "percentage-calculator",
@@ -996,6 +1107,42 @@ export const UTILITY_TOOLS: UtilityToolDefinition[] = [
     category: "calculators",
     toolType: "calculator",
     keywords: ["discount calculator", "sale price", "percent off", "price discount"],
+  },
+  {
+    slug: "age-calculator",
+    name: "Age Calculator",
+    description: "Calculate your exact age in years, months, and days from your birth date. Also shows countdown to your next birthday.",
+    icon: "🎂",
+    category: "calculators",
+    toolType: "calculator",
+    keywords: ["age calculator", "birth date", "how old", "age in days"],
+  },
+  {
+    slug: "bmi-calculator",
+    name: "BMI Calculator",
+    description: "Calculate your Body Mass Index from weight and height. Get your BMI value and health category classification.",
+    icon: "⚖️",
+    category: "calculators",
+    toolType: "calculator",
+    keywords: ["bmi calculator", "body mass index", "weight health", "bmi category"],
+  },
+  {
+    slug: "emi-calculator",
+    name: "Loan EMI Calculator",
+    description: "Calculate monthly EMI for loans with principal amount, interest rate, and tenure. See total interest and total payment breakdown.",
+    icon: "🏦",
+    category: "calculators",
+    toolType: "calculator",
+    keywords: ["emi calculator", "loan calculator", "monthly installment", "loan emi"],
+  },
+  {
+    slug: "tip-calculator",
+    name: "Tip Calculator",
+    description: "Calculate tip amount, total bill, and per-person share when splitting. Supports custom tip percentages and group splitting.",
+    icon: "💵",
+    category: "calculators",
+    toolType: "calculator",
+    keywords: ["tip calculator", "bill split", "gratuity", "restaurant tip"],
   },
 ];
 

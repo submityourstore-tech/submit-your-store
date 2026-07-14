@@ -9,6 +9,45 @@ import { getActiveSubcategoryStats, getActiveVerticalStats } from "@/lib/categor
 import { getFeaturedBusinesses, getPublicBusinessCount } from "@/lib/businesses";
 import { getLocationStats } from "@/lib/locations";
 import { getReviewSummariesForBusinesses } from "@/lib/reviews.server";
+import { getUtilityTool } from "@/lib/tools/utility-registry";
+
+const FEATURED_TOOL_SLUGS = [
+  "image-compressor",
+  "qr-code-generator",
+  "meta-title-generator",
+  "word-counter",
+  "password-generator",
+  "business-name-generator",
+  "json-formatter",
+  "webp-to-png",
+] as const;
+
+const WHY_FEATURES = [
+  {
+    icon: "📋",
+    title: "Free Business Listing",
+    description: "Get listed in our directory for free. No hidden fees, no pay-to-rank — just submit and get discovered.",
+    color: "bg-blue-50 border-blue-200 text-blue-700",
+  },
+  {
+    icon: "⭐",
+    title: "Community Reviews",
+    description: "Real reviews from verified members. Businesses cannot pay to remove legitimate feedback.",
+    color: "bg-amber-50 border-amber-200 text-amber-700",
+  },
+  {
+    icon: "🔍",
+    title: "SEO Optimized",
+    description: "Your listing is optimized for local search with structured data, clean URLs, and fast performance.",
+    color: "bg-emerald-50 border-emerald-200 text-emerald-700",
+  },
+  {
+    icon: "🛠️",
+    title: "100+ Free Tools",
+    description: "Access our full suite of free online tools for SEO, images, text, business documents, and more.",
+    color: "bg-purple-50 border-purple-200 text-purple-700",
+  },
+];
 
 export default async function HomePage() {
   const verticals = await getActiveVerticalStats();
@@ -20,11 +59,14 @@ export default async function HomePage() {
   const total = await getPublicBusinessCount(browseVertical);
   const reviewSummaries = await getReviewSummariesForBusinesses(featured.map((b) => b.id));
 
+  const featuredTools = FEATURED_TOOL_SLUGS.map((slug) => getUtilityTool(slug)).filter(Boolean);
+
   return (
     <div className="bg-white">
       <SidePromoTabs />
       <SearchHero searchAction="/listings" />
 
+      {/* Popular Listings */}
       <section className="mx-auto max-w-6xl px-4 py-8">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e0e0e0] pb-4">
           <div>
@@ -55,6 +97,36 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Why Submit Your Store? */}
+      <section className="border-t border-[#e0e0e0] bg-gradient-to-br from-[#f0f7ff] to-[#f7f7f7]">
+        <div className="mx-auto max-w-6xl px-4 py-10">
+          <div className="text-center">
+            <h2 className="text-xl font-bold text-[#111] sm:text-2xl">
+              Why <span className="text-[#1274c0]">Submit Your Store</span>?
+            </h2>
+            <p className="mx-auto mt-2 max-w-xl text-sm text-[#717171]">
+              Everything you need to grow your local business — free listings, real reviews, SEO optimization, and powerful tools.
+            </p>
+          </div>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {WHY_FEATURES.map((feature) => {
+              const [bgColor, borderColor, textColor] = feature.color.split(" ");
+              return (
+                <div
+                  key={feature.title}
+                  className={`rounded-xl border ${borderColor} ${bgColor} p-5 text-center shadow-sm`}
+                >
+                  <span className="text-3xl">{feature.icon}</span>
+                  <h3 className={`mt-3 font-bold ${textColor}`}>{feature.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-[#555]">{feature.description}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Browse by Location */}
       {verticals.length > 0 && (
         <section className="border-t border-[#e0e0e0] bg-[#f7f7f7]">
           <div className="mx-auto max-w-6xl px-4 py-8">
@@ -74,6 +146,7 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* Browse by Category */}
       {categories.length > 0 && (
         <section className="border-t border-[#e0e0e0] bg-white">
           <div className="mx-auto max-w-6xl px-4 py-8">
@@ -97,9 +170,87 @@ export default async function HomePage() {
         </section>
       )}
 
+      {/* Free Online Tools Showcase */}
+      <section className="border-t border-[#e0e0e0] bg-white">
+        <div className="mx-auto max-w-6xl px-4 py-10">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-bold text-[#111]">
+                Free Online <span className="text-[#1274c0]">Tools</span>
+              </h2>
+              <p className="mt-1 text-sm text-[#717171]">
+                SEO, image processing, business generators, dev utilities &amp; more — all free.
+              </p>
+            </div>
+            <Link href="/tools" className="text-sm font-semibold text-[#1274c0] hover:underline">
+              View all 100+ tools →
+            </Link>
+          </div>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {featuredTools.map((tool) => (
+              <Link
+                key={tool!.slug}
+                href={`/tools/${tool!.slug}`}
+                className="group flex items-start gap-3 rounded-lg border border-[#e0e0e0] bg-[#f7f7f7] p-4 shadow-sm transition hover:border-[#1274c0] hover:bg-white hover:shadow-md"
+              >
+                <span className="mt-0.5 flex-shrink-0 text-xl">{tool!.icon}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <h3 className="text-sm font-bold text-[#111] group-hover:text-[#1274c0]">
+                      {tool!.name}
+                    </h3>
+                    <svg className="h-4 w-4 flex-shrink-0 text-[#ccc] transition-colors group-hover:text-[#1274c0]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-[#717171]">
+                    {tool!.description}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Blog Section */}
       <HomeBlogSection />
+
+      {/* Latest Articles */}
+      <section className="border-t border-[#e0e0e0] bg-white">
+        <div className="mx-auto max-w-6xl px-4 py-8">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-bold text-[#111]">Latest Articles</h2>
+              <p className="mt-1 text-sm text-[#717171]">
+                Tips, guides, and insights for local businesses.
+              </p>
+            </div>
+            <Link href="/articles" className="text-sm font-semibold text-[#1274c0] hover:underline">
+              See all articles →
+            </Link>
+          </div>
+          <div className="mt-5 rounded-lg border border-[#e0e0e0] bg-[#f7f7f7] p-8 text-center">
+            <span className="text-3xl">📰</span>
+            <p className="mt-3 font-semibold text-[#333]">Articles coming soon</p>
+            <p className="mt-1 text-sm text-[#717171]">
+              We&apos;re working on in-depth guides to help your business grow.
+            </p>
+            <Link
+              href="/articles"
+              className="mt-4 inline-block rounded border border-[#1274c0] px-5 py-2 text-sm font-semibold text-[#1274c0] transition hover:bg-[#1274c0] hover:text-white"
+            >
+              Browse Articles
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ (moved to bottom before CTA) */}
       <HomeFaqSection />
 
+      {/* Free Listing CTA */}
       <section className="mx-auto max-w-6xl px-4 py-8">
         <div className="rounded border border-[#e0e0e0] bg-white p-6 text-center shadow-sm">
           <h2 className="text-xl font-bold text-[#111]">List your business for free</h2>

@@ -7,9 +7,9 @@ import { SiteHeaderAuth } from "@/components/SiteHeaderAuth";
 
 const NAV_LINKS = [
   { href: "/listings", label: "Listings" },
-  { href: "/tools", label: "SEO Tools" },
+  { href: "/tools", label: "Free Tools" },
   { href: "/blog", label: "Blog" },
-  { href: "/faq", label: "FAQ" },
+  { href: "/articles", label: "Articles" },
 ];
 
 export function SiteHeaderNav() {

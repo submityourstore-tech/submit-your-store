@@ -8,6 +8,7 @@ import { getSiteUrl } from "@/lib/site-config";
 import { getAllBlogPosts } from "@/lib/blogs.server";
 import { SEO_TOOLS } from "@/lib/tools/registry";
 import { getAllUtilityTools } from "@/lib/tools/utility-registry";
+import { getAllArticles } from "@/lib/articles";
 
 const STATIC_PATHS = [
   "",
@@ -24,6 +25,7 @@ const STATIC_PATHS = [
   "/terms-of-service",
   "/cookie-policy",
   "/disclaimer",
+  "/articles",
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -87,5 +89,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  return [...staticEntries, ...businessEntries, ...verticalEntries, ...blogEntries, ...toolEntries, ...utilityToolEntries];
+  const articleEntries: MetadataRoute.Sitemap = getAllArticles().map((article) => ({
+    url: `${base}/articles/${article.slug}`,
+    lastModified: new Date(article.publishedAt),
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  }));
+
+  return [...staticEntries, ...businessEntries, ...verticalEntries, ...blogEntries, ...toolEntries, ...utilityToolEntries, ...articleEntries];
 }

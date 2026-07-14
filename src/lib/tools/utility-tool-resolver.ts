@@ -51,6 +51,9 @@ import {
   textSorter,
   textReverser,
   caseConverter,
+  serpSnippetPreview,
+  randomTextGenerator,
+  loremIpsumGenerator,
 } from "@/lib/tools/implementations/text-tools";
 
 /* ---------- Dev Utilities ---------- */
@@ -71,6 +74,8 @@ import {
   passwordGenerator,
   uuidGenerator,
   cssGradientGenerator,
+  qrCodeGenerator,
+  barcodeGenerator,
   emojiPicker,
 } from "@/lib/tools/implementations/dev-utilities";
 
@@ -116,6 +121,7 @@ import {
   jpgToWebp,
   pngToWebp,
   webpToPng,
+  webpToJpg,
   jpgToPng,
   pngToJpg,
   imageRotator,
@@ -223,10 +229,17 @@ const TOOL_MAP: Record<string, ToolImpl> = {
   "hex-to-rgb": counter(hexToRgb),
   "rgb-to-hex": counter(rgbToHex),
 
+  // Text generators
+  "serp-snippet-preview": gen(serpSnippetPreview, "html"),
+  "random-text-generator": gen(randomTextGenerator, "text"),
+  "lorem-ipsum-generator": gen(loremIpsumGenerator, "text"),
+
   // Dev generators
   "password-generator": textTransform(passwordGenerator),
   "uuid-generator": textTransform(uuidGenerator),
   "css-gradient-generator": textTransform(cssGradientGenerator),
+  "qr-code-generator": gen(qrCodeGenerator, "html"),
+  "barcode-generator": gen(barcodeGenerator, "html"),
   "emoji-picker": textTransform(emojiPicker),
 
   // Business generators
@@ -266,6 +279,7 @@ const TOOL_MAP: Record<string, ToolImpl> = {
   "jpg-to-webp": img(jpgToWebp),
   "png-to-webp": img(pngToWebp),
   "webp-to-png": img(webpToPng),
+  "webp-to-jpg": img(webpToJpg),
   "jpg-to-png": img(jpgToPng),
   "png-to-jpg": img(pngToJpg),
   "image-rotator": img(imageRotator),

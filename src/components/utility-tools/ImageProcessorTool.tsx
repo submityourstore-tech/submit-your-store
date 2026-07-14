@@ -15,6 +15,19 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
+const MIME_TO_EXT: Record<string, string> = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+  "image/gif": ".gif",
+  "image/bmp": ".bmp",
+  "image/svg+xml": ".svg",
+};
+
+function mimeToExt(mime: string): string {
+  return MIME_TO_EXT[mime] ?? `.${mime.split("/").pop() ?? "bin"}`;
+}
+
 export function ImageProcessorTool({
   processFn,
   outputFormat,
@@ -25,6 +38,7 @@ export function ImageProcessorTool({
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [resultBlob, setResultBlob] = useState<Blob | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [optionValues, setOptionValues] = useState<Record<string, string>>(() => {
     const defaults: Record<string, string> = {};
@@ -61,14 +75,16 @@ export function ImageProcessorTool({
   async function handleProcess() {
     if (!file) return;
     setProcessing(true);
+    setError(null);
     try {
       const blob = await processFn(file, optionValues);
       const url = URL.createObjectURL(blob);
       setResultBlob(blob);
       setResultUrl(url);
-    } catch {
+    } catch (err) {
       setResultUrl(null);
       setResultBlob(null);
+      setError(err instanceof Error ? err.message : "Processing failed. Please try a different image.");
     } finally {
       setProcessing(false);
     }
@@ -78,8 +94,9 @@ export function ImageProcessorTool({
     if (!resultUrl || !resultBlob) return;
     const a = document.createElement("a");
     a.href = resultUrl;
-    const ext = outputFormat.startsWith(".") ? outputFormat : `.${outputFormat}`;
-    a.download = `processed-image${ext}`;
+    const ext = mimeToExt(resultBlob.type || outputFormat);
+    const baseName = file ? file.name.replace(/\.[^.]+$/, "") : "processed-image";
+    a.download = `${baseName}${ext}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -163,6 +180,13 @@ export function ImageProcessorTool({
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Error message */}
+      {error && (
+        <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          {error}
         </div>
       )}
 

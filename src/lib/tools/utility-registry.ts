@@ -913,6 +913,15 @@ export const UTILITY_TOOLS: UtilityToolDefinition[] = [
     keywords: ["webp to png", "webp converter", "png conversion", "image format"],
   },
   {
+    slug: "webp-to-jpg",
+    name: "WebP to JPG Converter",
+    description: "Convert WebP images to JPEG format with adjustable quality. Perfect for sharing WebP images with apps that don't support the format.",
+    icon: "🔄",
+    category: "image-tools",
+    toolType: "image-processor",
+    keywords: ["webp to jpg", "webp converter", "jpeg conversion", "image format"],
+  },
+  {
     slug: "jpg-to-png",
     name: "JPG to PNG Converter",
     description: "Convert JPEG images to PNG format with transparency support. Ideal for logos, graphics, and images needing lossless quality.",

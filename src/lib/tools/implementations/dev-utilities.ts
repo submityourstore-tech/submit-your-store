@@ -570,6 +570,153 @@ const EMOJI_DATA: Record<string, string[]> = {
   ],
 };
 
+// ── 18. QR Code Generator ──────────────────────────────────────────────────
+
+type GenFields = { key: string; label: string; type: string; placeholder?: string; defaultValue?: string | number | boolean; options?: { value: string; label: string }[]; required?: boolean; rows?: number }[];
+type GenerateFn = (values: Record<string, string>) => string;
+
+export const qrCodeGenerator: { fields: GenFields; generate: GenerateFn } = {
+  fields: [
+    { key: "data", label: "Text or URL", type: "textarea", placeholder: "Enter text or URL to encode…", required: true, rows: 3 },
+    { key: "size", label: "Size (px)", type: "number", placeholder: "200", defaultValue: "200" },
+    { key: "color", label: "Foreground Color", type: "color", defaultValue: "#000000" },
+    { key: "bg", label: "Background Color", type: "color", defaultValue: "#ffffff" },
+  ],
+  generate(v) {
+    const data = v.data || "";
+    const size = parseInt(v.size || "200", 10);
+    const fg = v.color || "#000000";
+    const bg = v.bg || "#ffffff";
+    if (!data.trim()) return "Please enter text or a URL to generate a QR code.";
+
+    const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}&color=${fg.replace("#", "")}&bgcolor=${bg.replace("#", "")}`;
+    return `<div style="text-align:center;padding:20px;">
+  <img src="${apiUrl}" alt="QR Code" width="${size}" height="${size}" style="border:1px solid #e0e0e0;border-radius:8px;"/>
+  <p style="margin-top:12px;font-size:13px;color:#666;">Right-click the image to save it</p>
+  <p style="margin-top:8px;font-size:12px;color:#999;">Direct URL: <a href="${apiUrl}" target="_blank" rel="noopener">${apiUrl.length > 80 ? apiUrl.slice(0, 80) + "…" : apiUrl}</a></p>
+</div>`;
+  },
+};
+
+// ── 19. Barcode Generator ──────────────────────────────────────────────────
+
+export const barcodeGenerator: { fields: GenFields; generate: GenerateFn } = {
+  fields: [
+    { key: "data", label: "Data / Code", type: "text", placeholder: "e.g. 123456789012", required: true },
+    {
+      key: "format", label: "Barcode Format", type: "select", defaultValue: "code128",
+      options: [
+        { value: "code128", label: "Code 128 (general)" },
+        { value: "ean13", label: "EAN-13 (retail)" },
+        { value: "upc", label: "UPC-A (US retail)" },
+        { value: "code39", label: "Code 39" },
+        { value: "itf", label: "ITF (Interleaved 2 of 5)" },
+      ],
+    },
+    { key: "width", label: "Bar Width", type: "number", placeholder: "2", defaultValue: "2" },
+    { key: "height", label: "Bar Height (px)", type: "number", placeholder: "80", defaultValue: "80" },
+  ],
+  generate(v) {
+    const data = v.data || "";
+    const format = v.format || "code128";
+    const barW = parseInt(v.width || "2", 10);
+    const barH = parseInt(v.height || "80", 10);
+    if (!data.trim()) return "Please enter data to generate a barcode.";
+
+    const formatDisplay: Record<string, string> = {
+      code128: "Code 128", ean13: "EAN-13", upc: "UPC-A", code39: "Code 39", itf: "ITF",
+    };
+
+    const validationErrors: string[] = [];
+    if (format === "ean13" && !/^\d{12,13}$/.test(data.trim())) {
+      validationErrors.push("EAN-13 requires exactly 12 or 13 digits");
+    }
+    if (format === "upc" && !/^\d{11,12}$/.test(data.trim())) {
+      validationErrors.push("UPC-A requires exactly 11 or 12 digits");
+    }
+    if (format === "itf" && (!/^\d+$/.test(data.trim()) || data.trim().length % 2 !== 0)) {
+      validationErrors.push("ITF requires an even number of digits");
+    }
+
+    if (validationErrors.length > 0) {
+      return `<div style="color:red;padding:12px;">⚠️ ${validationErrors.join(". ")}</div>`;
+    }
+
+    const svgBars = generateCode128SVG(data.trim(), barW, barH);
+
+    return `<div style="text-align:center;padding:20px;background:white;border-radius:8px;">
+  <p style="font-size:12px;color:#666;margin-bottom:12px;">Format: ${formatDisplay[format] || format}</p>
+  ${svgBars}
+  <p style="margin-top:8px;font-size:14px;font-family:monospace;letter-spacing:2px;">${data}</p>
+  <p style="margin-top:12px;font-size:12px;color:#999;">Right-click the barcode to copy or save</p>
+</div>`;
+  },
+};
+
+function generateCode128SVG(data: string, barWidth: number, height: number): string {
+  const CODE128_START = 104;
+  const CODE128_STOP = [2, 3, 3, 1, 1, 1, 2];
+  const CODE128_PATTERNS: number[][] = [
+    [2,1,2,2,2,2],[2,2,2,1,2,2],[2,2,2,2,2,1],[1,2,1,2,2,3],[1,2,1,3,2,2],
+    [1,3,1,2,2,2],[1,2,2,2,1,3],[1,2,2,3,1,2],[1,3,2,2,1,2],[2,2,1,2,1,3],
+    [2,2,1,3,1,2],[2,3,1,2,1,2],[1,1,2,2,3,2],[1,2,2,1,3,2],[1,2,2,2,3,1],
+    [1,1,3,2,2,2],[1,2,3,1,2,2],[1,2,3,2,2,1],[2,2,3,2,1,1],[2,2,1,1,3,2],
+    [2,2,1,2,3,1],[2,1,3,2,1,2],[2,2,3,1,1,2],[3,1,2,1,3,1],[3,1,1,2,2,2],
+    [3,2,1,1,2,2],[3,2,1,2,2,1],[3,1,2,2,1,2],[3,2,2,1,1,2],[3,2,2,2,1,1],
+    [2,1,2,1,2,3],[2,1,2,3,2,1],[2,3,2,1,2,1],[1,1,1,3,2,3],[1,3,1,1,2,3],
+    [1,3,1,3,2,1],[1,1,2,3,1,3],[1,3,2,1,1,3],[1,3,2,3,1,1],[2,1,1,3,1,3],
+    [2,3,1,1,1,3],[2,3,1,3,1,1],[1,1,2,1,3,3],[1,1,2,3,3,1],[1,3,2,1,3,1],
+    [1,1,3,1,2,3],[1,1,3,3,2,1],[1,3,3,1,2,1],[3,1,3,1,2,1],[2,1,1,3,3,1],
+    [2,3,1,1,3,1],[2,1,3,1,1,3],[2,1,3,3,1,1],[2,1,3,1,3,1],[3,1,1,1,2,3],
+    [3,1,1,3,2,1],[3,3,1,1,2,1],[3,1,2,1,1,3],[3,1,2,3,1,1],[3,3,2,1,1,1],
+    [3,1,4,1,1,1],[2,2,1,4,1,1],[4,3,1,1,1,1],[1,1,1,2,2,4],[1,1,1,4,2,2],
+    [1,2,1,1,2,4],[1,2,1,4,2,1],[1,4,1,1,2,2],[1,4,1,2,2,1],[1,1,2,2,1,4],
+    [1,1,2,4,1,2],[1,2,2,1,1,4],[1,2,2,4,1,1],[1,4,2,1,1,2],[1,4,2,2,1,1],
+    [2,4,1,2,1,1],[2,2,1,1,1,4],[4,1,3,1,1,1],[2,4,1,1,1,2],[1,3,4,1,1,1],
+    [1,1,1,2,4,2],[1,2,1,1,4,2],[1,2,1,2,4,1],[1,1,4,2,1,2],[1,2,4,1,1,2],
+    [1,2,4,2,1,1],[4,1,1,2,1,2],[4,2,1,1,1,2],[4,2,1,2,1,1],[2,1,2,1,4,1],
+    [2,1,4,1,2,1],[4,1,2,1,2,1],[1,1,1,1,4,3],[1,1,1,3,4,1],[1,3,1,1,4,1],
+    [1,1,4,1,1,3],[1,1,4,3,1,1],[4,1,1,1,1,3],[4,1,1,3,1,1],[1,1,3,1,4,1],
+    [1,1,4,1,3,1],[3,1,1,1,4,1],[4,1,1,1,3,1],[2,1,1,4,1,2],[2,1,1,2,1,4],
+    [2,1,1,2,3,2],[2,3,3,1,1,1,2],
+  ];
+
+  const codes: number[] = [];
+  let checksum = CODE128_START;
+  codes.push(CODE128_START);
+
+  for (let i = 0; i < data.length; i++) {
+    const code = data.charCodeAt(i) - 32;
+    codes.push(code);
+    checksum += code * (i + 1);
+  }
+  codes.push(checksum % 103);
+
+  let bars = "";
+  let x = 10;
+  for (const code of codes) {
+    const pattern = CODE128_PATTERNS[code];
+    if (!pattern) continue;
+    for (let i = 0; i < pattern.length; i++) {
+      const w = pattern[i] * barWidth;
+      if (i % 2 === 0) {
+        bars += `<rect x="${x}" y="0" width="${w}" height="${height}" fill="black"/>`;
+      }
+      x += w;
+    }
+  }
+  for (let i = 0; i < CODE128_STOP.length; i++) {
+    const w = CODE128_STOP[i] * barWidth;
+    if (i % 2 === 0) {
+      bars += `<rect x="${x}" y="0" width="${w}" height="${height}" fill="black"/>`;
+    }
+    x += w;
+  }
+
+  const totalWidth = x + 10;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${height}" viewBox="0 0 ${totalWidth} ${height}" style="max-width:100%;">${bars}</svg>`;
+}
+
 export const emojiPicker: { transformFn: TransformFn } = {
   transformFn(_input, options = {}) {
     const search = (options.search ?? "").toLowerCase();

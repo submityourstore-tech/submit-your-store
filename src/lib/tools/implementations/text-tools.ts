@@ -489,3 +489,186 @@ export const caseConverter: { transformFn: TransformFn } = {
     }
   },
 };
+
+// ── 15. SERP Snippet Preview ──────────────────────────────────────────────
+
+type GenFields = { key: string; label: string; type: string; placeholder?: string; defaultValue?: string | number | boolean; options?: { value: string; label: string }[]; required?: boolean; rows?: number }[];
+type GenerateFn = (values: Record<string, string>) => string;
+
+export const serpSnippetPreview: { fields: GenFields; generate: GenerateFn } = {
+  fields: [
+    { key: "title", label: "Page Title", type: "text", placeholder: "e.g. Best Coffee Shop in New York", required: true },
+    { key: "url", label: "Page URL", type: "url", placeholder: "https://example.com/page" },
+    { key: "description", label: "Meta Description", type: "textarea", placeholder: "Enter your meta description here…", rows: 3 },
+  ],
+  generate(v) {
+    const title = v.title || "Page Title";
+    const url = v.url || "https://example.com";
+    const desc = v.description || "No description provided.";
+    const titleTrunc = title.length > 60 ? title.slice(0, 57) + "…" : title;
+    const descTrunc = desc.length > 160 ? desc.slice(0, 157) + "…" : desc;
+
+    return `<div style="font-family: Arial, sans-serif; max-width: 600px; padding: 16px;">
+  <div style="margin-bottom: 4px;">
+    <span style="font-size: 14px; color: #202124;">${url}</span>
+  </div>
+  <div style="margin-bottom: 4px;">
+    <a href="#" style="font-size: 20px; color: #1a0dab; text-decoration: none; line-height: 1.3;">${titleTrunc}</a>
+  </div>
+  <div style="font-size: 14px; color: #4d5156; line-height: 1.58;">
+    ${descTrunc}
+  </div>
+</div>
+<hr style="margin-top: 20px; border: none; border-top: 1px solid #e0e0e0;" />
+<p style="font-size: 13px; color: #666; margin-top: 12px;">
+  <strong>Title length:</strong> ${title.length}/60 characters ${title.length > 60 ? "⚠️ Too long" : "✅ Good"}<br/>
+  <strong>Description length:</strong> ${desc.length}/160 characters ${desc.length > 160 ? "⚠️ Too long" : desc.length < 120 ? "⚠️ Consider adding more" : "✅ Good"}
+</p>`;
+  },
+};
+
+// ── 16. Random Text Generator ─────────────────────────────────────────────
+
+const RANDOM_WORDS = [
+  "ability", "achieve", "adapt", "advance", "approach", "balance", "benefit",
+  "build", "capable", "change", "clarity", "commit", "connect", "create",
+  "decide", "deliver", "design", "develop", "discover", "drive", "effect",
+  "enable", "engage", "enhance", "ensure", "evolve", "explore", "focus",
+  "forward", "global", "growth", "guide", "impact", "improve", "include",
+  "insight", "inspire", "invest", "journey", "knowledge", "launch", "lead",
+  "manage", "method", "model", "nature", "network", "offer", "operate",
+  "outcome", "partner", "perform", "plan", "potential", "power", "practice",
+  "process", "product", "progress", "project", "provide", "purpose", "quality",
+  "reach", "reason", "region", "report", "require", "resource", "respond",
+  "result", "review", "scope", "secure", "service", "share", "simple",
+  "solution", "source", "space", "standard", "strategy", "strength", "structure",
+  "success", "support", "sustain", "target", "team", "together", "tools",
+  "transform", "unique", "value", "vision", "welcome", "wonder", "yield",
+];
+
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function randomSentence(minWords: number, maxWords: number): string {
+  const len = minWords + Math.floor(Math.random() * (maxWords - minWords + 1));
+  const words: string[] = [];
+  for (let i = 0; i < len; i++) words.push(pick(RANDOM_WORDS));
+  words[0] = words[0].charAt(0).toUpperCase() + words[0].slice(1);
+  return words.join(" ") + ".";
+}
+
+export const randomTextGenerator: { fields: GenFields; generate: GenerateFn } = {
+  fields: [
+    {
+      key: "type", label: "Output Type", type: "select", defaultValue: "paragraphs",
+      options: [
+        { value: "paragraphs", label: "Paragraphs" },
+        { value: "sentences", label: "Sentences" },
+        { value: "words", label: "Words" },
+      ],
+    },
+    { key: "count", label: "Count", type: "number", placeholder: "3", defaultValue: "3" },
+  ],
+  generate(v) {
+    const count = Math.max(1, Math.min(50, parseInt(v.count || "3", 10)));
+    const type = v.type || "paragraphs";
+
+    if (type === "words") {
+      const words: string[] = [];
+      for (let i = 0; i < count; i++) words.push(pick(RANDOM_WORDS));
+      return words.join(" ");
+    }
+    if (type === "sentences") {
+      const out: string[] = [];
+      for (let i = 0; i < count; i++) out.push(randomSentence(6, 14));
+      return out.join(" ");
+    }
+    const paragraphs: string[] = [];
+    for (let p = 0; p < count; p++) {
+      const sentCount = 3 + Math.floor(Math.random() * 4);
+      const sents: string[] = [];
+      for (let s = 0; s < sentCount; s++) sents.push(randomSentence(6, 14));
+      paragraphs.push(sents.join(" "));
+    }
+    return paragraphs.join("\n\n");
+  },
+};
+
+// ── 17. Lorem Ipsum Generator ─────────────────────────────────────────────
+
+const LOREM_BASE = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+
+const LOREM_SENTENCES = [
+  "Curabitur pretium tincidunt lacus, a gravida augue.",
+  "Nulla facilisi. Etiam non diam ante.",
+  "Donec eget efficitur mi, et fermentum quam.",
+  "Vestibulum tortor quam, feugiat vitae, ultricies eget.",
+  "Pellentesque habitant morbi tristique senectus et netus.",
+  "Aenean ultricies mi vitae est mauris, sit amet ornare nibh.",
+  "Phasellus blandit leo ut odio efficitur tincidunt.",
+  "Integer nec odio praesent libero sed cursus ante dapibus diam.",
+  "Maecenas tempus tellus eget condimentum rhoncus sem.",
+  "Fusce dapibus tellus ac cursus commodo tortor mauris condimentum.",
+  "Morbi in sem quis dui placerat ornare pellentesque.",
+  "Praesent blandit dolor sed nunc vestibulum congue.",
+  "Quisque volutpat condimentum velit class aptent taciti.",
+  "Nam nec ante sed lacinia magna quam cumque sapien.",
+  "Suspendisse in justo eu magna luctus suscipit nam nisi elit.",
+  "Sed magna purus fermentum eu tristique vitae.",
+  "Vivamus vestibulum nulla nec ante egestas rutrum.",
+  "Mauris vel quam nunc praesent ut ligula non mi varius sagittis.",
+];
+
+function loremSentence(): string {
+  return pick(LOREM_SENTENCES);
+}
+
+function loremParagraph(first: boolean): string {
+  const sentCount = 4 + Math.floor(Math.random() * 4);
+  const sents: string[] = [];
+  if (first) {
+    sents.push(LOREM_BASE.split(". ").slice(0, 2).join(". ") + ".");
+  }
+  while (sents.length < sentCount) sents.push(loremSentence());
+  return sents.join(" ");
+}
+
+export const loremIpsumGenerator: { fields: GenFields; generate: GenerateFn } = {
+  fields: [
+    {
+      key: "type", label: "Output Type", type: "select", defaultValue: "paragraphs",
+      options: [
+        { value: "paragraphs", label: "Paragraphs" },
+        { value: "sentences", label: "Sentences" },
+        { value: "words", label: "Words" },
+      ],
+    },
+    { key: "count", label: "Count", type: "number", placeholder: "5", defaultValue: "5" },
+    { key: "startWithLorem", label: "Start with 'Lorem ipsum…'", type: "checkbox", defaultValue: "true" },
+  ],
+  generate(v) {
+    const count = Math.max(1, Math.min(100, parseInt(v.count || "5", 10)));
+    const type = v.type || "paragraphs";
+    const startClassic = v.startWithLorem !== "false";
+
+    if (type === "words") {
+      const allWords = LOREM_BASE.split(/\s+/);
+      const extra = LOREM_SENTENCES.join(" ").split(/\s+/);
+      const pool = [...allWords, ...extra];
+      const out: string[] = [];
+      if (startClassic) out.push("Lorem", "ipsum");
+      while (out.length < count) out.push(pick(pool).toLowerCase().replace(/[.,]/g, ""));
+      return out.slice(0, count).join(" ");
+    }
+    if (type === "sentences") {
+      const out: string[] = [];
+      if (startClassic) out.push(LOREM_BASE.split(". ")[0] + ".");
+      while (out.length < count) out.push(loremSentence());
+      return out.slice(0, count).join(" ");
+    }
+    const paragraphs: string[] = [];
+    for (let p = 0; p < count; p++) paragraphs.push(loremParagraph(startClassic && p === 0));
+    return paragraphs.join("\n\n");
+  },
+};

@@ -83,11 +83,29 @@ export const imageCompressor: ImageToolExport = {
       defaultValue: "80",
       required: true,
     },
+    {
+      key: "format",
+      label: "Output Format",
+      type: "select",
+      defaultValue: "auto",
+      options: [
+        { value: "auto", label: "Same as input" },
+        { value: "image/jpeg", label: "JPEG" },
+        { value: "image/png", label: "PNG" },
+        { value: "image/webp", label: "WebP" },
+      ],
+    },
   ],
   async processFn(file, options) {
     const quality = Math.min(100, Math.max(1, parseInt(options.quality || "80", 10)));
     const { canvas } = await loadImageToCanvas(file);
-    return canvasToBlob(canvas, "image/jpeg", quality);
+    let mime = options.format || "auto";
+    if (mime === "auto") {
+      if (file.type === "image/png") mime = "image/png";
+      else if (file.type === "image/webp") mime = "image/webp";
+      else mime = "image/jpeg";
+    }
+    return canvasToBlob(canvas, mime, quality);
   },
 };
 
@@ -265,6 +283,49 @@ export const webpToPng: ImageToolExport = {
     }
     const { canvas } = await loadImageToCanvas(file);
     return canvasToBlob(canvas, "image/png");
+  },
+};
+
+// ---------------------------------------------------------------------------
+// 6b. WebP to JPG
+// ---------------------------------------------------------------------------
+
+export const webpToJpg: ImageToolExport = {
+  outputFormat: "image/jpeg",
+  fields: [
+    {
+      key: "quality",
+      label: "Quality (1–100)",
+      type: "number",
+      placeholder: "90",
+      defaultValue: "90",
+    },
+    {
+      key: "bgColor",
+      label: "Background color (for transparency)",
+      type: "color",
+      defaultValue: "#ffffff",
+    },
+  ],
+  async processFn(file, options) {
+    if (!file.type.includes("webp")) {
+      throw new Error("Please upload a WebP image.");
+    }
+    const quality = Math.min(100, Math.max(1, parseInt(options.quality || "90", 10)));
+    const bgColor = options.bgColor || "#ffffff";
+
+    const { img } = await loadImageToCanvas(file);
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Failed to get canvas 2D context");
+
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+
+    return canvasToBlob(canvas, "image/jpeg", quality);
   },
 };
 

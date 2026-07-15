@@ -58,7 +58,7 @@ export default async function HomePage() {
   const featured = await getFeaturedBusinesses(6, browseVertical);
   const categories = await getActiveSubcategoryStats(browseVertical);
   const locations = await getLocationStats("TX", browseVertical);
-  const total = await getPublicBusinessCount(browseVertical);
+  const total = await getPublicBusinessCount();
   const reviewSummaries = await getReviewSummariesForBusinesses(featured.map((b) => b.id));
 
   const featuredTools = FEATURED_TOOL_SLUGS.map((slug) => getUtilityTool(slug)).filter(Boolean);
@@ -111,23 +111,27 @@ export default async function HomePage() {
               Everything you need to grow your local business — free listings, real reviews, SEO optimization, and powerful tools.
             </p>
           </div>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {WHY_FEATURES.map((feature) => {
               const [bgColor, borderColor, textColor] = feature.color.split(" ");
               return (
                 <div
                   key={feature.title}
-                  className={`rounded-xl border ${borderColor} ${bgColor} p-5 text-center shadow-sm`}
+                  className={`overflow-hidden rounded-xl border ${borderColor} bg-white shadow-sm transition hover:shadow-md`}
                 >
-                  <Image
-                    src={feature.image}
-                    alt={feature.title}
-                    width={80}
-                    height={80}
-                    className="mx-auto h-20 w-20 object-contain"
-                  />
-                  <h3 className={`mt-3 font-bold ${textColor}`}>{feature.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-[#555]">{feature.description}</p>
+                  <div className={`flex items-center justify-center ${bgColor} p-6`}>
+                    <Image
+                      src={feature.image}
+                      alt={feature.title}
+                      width={140}
+                      height={140}
+                      className="h-28 w-28 object-contain drop-shadow-md"
+                    />
+                  </div>
+                  <div className="p-4 text-center">
+                    <h3 className={`font-bold ${textColor}`}>{feature.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-[#555]">{feature.description}</p>
+                  </div>
                 </div>
               );
             })}

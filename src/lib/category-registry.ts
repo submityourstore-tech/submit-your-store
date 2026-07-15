@@ -448,6 +448,19 @@ export const CATEGORY_REGISTRY: VerticalDef[] = [
       { slug: "subscription-services", label: "Subscription Services" },
     ],
   },
+  {
+    slug: "cannabis-dispensaries",
+    label: "Cannabis & Dispensaries",
+    navLabel: "Cannabis & Dispensaries",
+    searchTags: ['Cannabis Dispensaries', 'Weed Delivery', 'CBD Shops'],
+    subcategories: [
+      { slug: "cannabis-dispensaries", label: "Cannabis Dispensaries" },
+      { slug: "weed-delivery", label: "Weed Delivery" },
+      { slug: "cbd-shops", label: "CBD Shops" },
+      { slug: "head-shops", label: "Head Shops" },
+      { slug: "cannabis-brands", label: "Cannabis Brands" },
+    ],
+  },
 ];
 
 /** Legacy vertical slug kept for /hvac routes and imported data filters. */

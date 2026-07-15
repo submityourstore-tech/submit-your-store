@@ -25,7 +25,7 @@ export const ARTICLES: Article[] = [
     author: AUTHOR,
     publishedAt: "2026-06-10",
     readingTime: "9 min read",
-    featuredImage: "",
+    featuredImage: "/images/article-google-maps.png",
     content: `
 <h2 id="why-google-maps-matters">Why a Google Maps Listing Matters for Your Business</h2>
 
@@ -195,7 +195,7 @@ export const ARTICLES: Article[] = [
     author: AUTHOR,
     publishedAt: "2026-06-18",
     readingTime: "7 min read",
-    featuredImage: "",
+    featuredImage: "/images/article-seo-tools.png",
     content: `
 <h2 id="why-free-tools">Why Free SEO Tools Are a Game-Changer for Small Businesses</h2>
 
@@ -306,7 +306,7 @@ export const ARTICLES: Article[] = [
     author: AUTHOR,
     publishedAt: "2026-06-25",
     readingTime: "8 min read",
-    featuredImage: "",
+    featuredImage: "/images/article-citations.png",
     content: `
 <h2 id="what-are-citations">What Are Local Business Citations?</h2>
 
@@ -442,7 +442,7 @@ export const ARTICLES: Article[] = [
     author: AUTHOR,
     publishedAt: "2026-07-02",
     readingTime: "6 min read",
-    featuredImage: "",
+    featuredImage: "/images/article-content-marketing.png",
     content: `
 <h2 id="why-descriptions-matter">Why Your Business Description Matters More Than You Think</h2>
 
@@ -549,7 +549,7 @@ export const ARTICLES: Article[] = [
     author: AUTHOR,
     publishedAt: "2026-07-08",
     readingTime: "8 min read",
-    featuredImage: "",
+    featuredImage: "/images/article-schema-markup.png",
     content: `
 <h2 id="what-is-schema">What Is Schema Markup?</h2>
 

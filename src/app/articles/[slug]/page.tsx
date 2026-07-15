@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { ArticleBanner } from "@/components/ArticleBanner";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { getAllArticles, getArticle, getRelatedArticles } from "@/lib/articles";
@@ -87,11 +88,22 @@ export default async function ArticlePage({ params }: PageProps) {
           {/* Main content */}
           <article className="min-w-0 flex-1">
             <header className="border-b border-[#e0e0e0] pb-6">
-              <ArticleBanner
-                title={article.title}
-                category={article.category}
-                className="mb-5 shadow-md"
-              />
+              {article.featuredImage ? (
+                <Image
+                  src={article.featuredImage}
+                  alt={article.title}
+                  width={900}
+                  height={500}
+                  className="mb-5 w-full rounded-lg shadow-md"
+                  priority
+                />
+              ) : (
+                <ArticleBanner
+                  title={article.title}
+                  category={article.category}
+                  className="mb-5 shadow-md"
+                />
+              )}
 
               <span
                 className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${categoryColors[article.category] ?? "bg-[#f3f4f6] text-[#374151]"}`}

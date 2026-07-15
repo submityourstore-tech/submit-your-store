@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { ArticleBanner } from "@/components/ArticleBanner";
 import { ContentPageLayout } from "@/components/ContentPageLayout";
@@ -49,11 +50,21 @@ export default async function BlogIndexPage() {
             className="group mb-6 flex flex-col overflow-hidden rounded-lg border border-[#e0e0e0] bg-white shadow-sm transition hover:shadow-md sm:flex-row"
           >
             <div className="sm:w-1/2">
-              <ArticleBanner
-                title={articles[0].title}
-                category={articles[0].category}
-                className="h-full min-h-[200px] w-full"
-              />
+              {articles[0].featuredImage ? (
+                <Image
+                  src={articles[0].featuredImage}
+                  alt={articles[0].title}
+                  width={600}
+                  height={340}
+                  className="h-full min-h-[200px] w-full object-cover"
+                />
+              ) : (
+                <ArticleBanner
+                  title={articles[0].title}
+                  category={articles[0].category}
+                  className="h-full min-h-[200px] w-full"
+                />
+              )}
             </div>
             <div className="flex flex-1 flex-col justify-center p-6">
               <div className="mb-2 flex items-center gap-2">
@@ -83,11 +94,21 @@ export default async function BlogIndexPage() {
               href={`/articles/${article.slug}`}
               className="group flex flex-col overflow-hidden rounded-lg border border-[#e0e0e0] bg-white shadow-sm transition hover:shadow-md"
             >
-              <ArticleBanner
-                title={article.title}
-                category={article.category}
-                className="aspect-[16/9] w-full"
-              />
+              {article.featuredImage ? (
+                <Image
+                  src={article.featuredImage}
+                  alt={article.title}
+                  width={400}
+                  height={225}
+                  className="aspect-[16/9] w-full object-cover"
+                />
+              ) : (
+                <ArticleBanner
+                  title={article.title}
+                  category={article.category}
+                  className="aspect-[16/9] w-full"
+                />
+              )}
               <div className="flex flex-1 flex-col p-4">
                 <div className="mb-2 flex items-center gap-2">
                   <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${categoryColors[article.category] ?? "bg-[#f3f4f6] text-[#374151]"}`}>

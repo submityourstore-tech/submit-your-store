@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { BusinessCard } from "@/components/BusinessCard";
 import { HomeBlogSection } from "@/components/HomeBlogSection";
@@ -25,25 +26,25 @@ const FEATURED_TOOL_SLUGS = [
 
 const WHY_FEATURES = [
   {
-    icon: "📋",
+    image: "/brand/free-listing.png",
     title: "Free Business Listing",
     description: "Get listed in our directory for free. No hidden fees, no pay-to-rank — just submit and get discovered.",
     color: "bg-blue-50 border-blue-200 text-blue-700",
   },
   {
-    icon: "⭐",
+    image: "/brand/community-reviews.png",
     title: "Community Reviews",
     description: "Real reviews from verified members. Businesses cannot pay to remove legitimate feedback.",
     color: "bg-amber-50 border-amber-200 text-amber-700",
   },
   {
-    icon: "🔍",
+    image: "/brand/seo-optimized.png",
     title: "SEO Optimized",
     description: "Your listing is optimized for local search with structured data, clean URLs, and fast performance.",
     color: "bg-emerald-50 border-emerald-200 text-emerald-700",
   },
   {
-    icon: "🛠️",
+    image: "/brand/free-tools.png",
     title: "100+ Free Tools",
     description: "Access our full suite of free online tools for SEO, images, text, business documents, and more.",
     color: "bg-purple-50 border-purple-200 text-purple-700",
@@ -118,7 +119,13 @@ export default async function HomePage() {
                   key={feature.title}
                   className={`rounded-xl border ${borderColor} ${bgColor} p-5 text-center shadow-sm`}
                 >
-                  <span className="text-3xl">{feature.icon}</span>
+                  <Image
+                    src={feature.image}
+                    alt={feature.title}
+                    width={80}
+                    height={80}
+                    className="mx-auto h-20 w-20 object-contain"
+                  />
                   <h3 className={`mt-3 font-bold ${textColor}`}>{feature.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-[#555]">{feature.description}</p>
                 </div>

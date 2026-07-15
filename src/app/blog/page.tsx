@@ -42,8 +42,42 @@ export default async function BlogIndexPage() {
           <h2 className="text-xl font-bold text-[#111]">Articles &amp; Guides</h2>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {articles.map((article) => (
+        {/* Featured article — full width */}
+        {articles[0] && (
+          <Link
+            href={`/articles/${articles[0].slug}`}
+            className="group mb-6 flex flex-col overflow-hidden rounded-lg border border-[#e0e0e0] bg-white shadow-sm transition hover:shadow-md sm:flex-row"
+          >
+            <div className="sm:w-1/2">
+              <ArticleBanner
+                title={articles[0].title}
+                category={articles[0].category}
+                className="h-full min-h-[200px] w-full"
+              />
+            </div>
+            <div className="flex flex-1 flex-col justify-center p-6">
+              <div className="mb-2 flex items-center gap-2">
+                <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${categoryColors[articles[0].category] ?? "bg-[#f3f4f6] text-[#374151]"}`}>
+                  {articles[0].category}
+                </span>
+                <span className="text-xs text-[#999]">{articles[0].readingTime}</span>
+              </div>
+              <h3 className="text-xl font-bold leading-snug text-[#111] group-hover:text-[#1274c0]">
+                {articles[0].title}
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-[#555]">
+                {articles[0].description}
+              </p>
+              <span className="mt-4 text-sm font-semibold text-[#1274c0] group-hover:underline">
+                Read article &rarr;
+              </span>
+            </div>
+          </Link>
+        )}
+
+        {/* Remaining articles — grid */}
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {articles.slice(1).map((article) => (
             <Link
               key={article.slug}
               href={`/articles/${article.slug}`}
@@ -52,33 +86,24 @@ export default async function BlogIndexPage() {
               <ArticleBanner
                 title={article.title}
                 category={article.category}
-                className="aspect-[16/9] w-full object-cover transition group-hover:scale-[1.02]"
+                className="aspect-[16/9] w-full"
               />
-              <div className="flex flex-1 flex-col p-5">
-                <div className="mb-3 flex items-center gap-2">
-                  <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${categoryColors[article.category] ?? "bg-[#f3f4f6] text-[#374151]"}`}>
+              <div className="flex flex-1 flex-col p-4">
+                <div className="mb-2 flex items-center gap-2">
+                  <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${categoryColors[article.category] ?? "bg-[#f3f4f6] text-[#374151]"}`}>
                     {article.category}
                   </span>
-                  <span className="text-xs text-[#999]">{article.readingTime}</span>
+                  <span className="text-[10px] text-[#999]">{article.readingTime}</span>
                 </div>
-                <h3 className="text-lg font-bold leading-snug text-[#111] group-hover:text-[#1274c0]">
+                <h3 className="text-sm font-bold leading-snug text-[#111] group-hover:text-[#1274c0]">
                   {article.title}
                 </h3>
-                <p className="mt-2 flex-1 text-sm leading-relaxed text-[#555]">
+                <p className="mt-1 flex-1 text-xs leading-relaxed text-[#555] line-clamp-2">
                   {article.description}
                 </p>
-                <div className="mt-4 flex items-center justify-between border-t border-[#f0f0f0] pt-3">
-                  <span className="text-xs text-[#999]">
-                    {new Date(article.publishedAt).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </span>
-                  <span className="text-xs font-semibold text-[#1274c0] group-hover:underline">
-                    Read article &rarr;
-                  </span>
-                </div>
+                <span className="mt-3 text-xs font-semibold text-[#1274c0] group-hover:underline">
+                  Read &rarr;
+                </span>
               </div>
             </Link>
           ))}

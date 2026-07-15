@@ -24,28 +24,64 @@ a {
   color: inherit;
 }
 
+.content-page {
+  font-size: 1rem;
+  line-height: 1.75;
+  color: #333;
+}
+
 .content-page h2 {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: var(--jd-text);
-  margin-top: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #111;
+  margin-top: 2.25rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e8f4fd;
+  letter-spacing: -0.01em;
 }
 
 .content-page h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #222;
+  margin-top: 1.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.content-page h4 {
   font-size: 1rem;
   font-weight: 600;
-  color: var(--jd-text);
-  margin-top: 1.25rem;
+  color: #333;
+  margin-top: 1.5rem;
+  margin-bottom: 0.4rem;
 }
 
 .content-page p {
-  line-height: 1.65;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.8;
+  color: #444;
+}
+
+.content-page a {
+  color: var(--jd-blue);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: rgba(18, 116, 192, 0.3);
+  text-underline-offset: 2px;
+  transition: text-decoration-color 0.2s;
+}
+
+.content-page a:hover {
+  text-decoration-color: var(--jd-blue);
 }
 
 .content-page ul,
 .content-page ol {
   margin-top: 0.75rem;
-  padding-left: 1.25rem;
+  margin-bottom: 0.75rem;
+  padding-left: 1.5rem;
 }
 
 .content-page ul {
@@ -57,17 +93,121 @@ a {
 }
 
 .content-page li {
-  margin-top: 0.35rem;
+  margin-top: 0.4rem;
+  line-height: 1.7;
+  color: #444;
+  padding-left: 0.25rem;
+}
+
+.content-page li::marker {
+  color: var(--jd-blue);
+  font-weight: 600;
+}
+
+.content-page table {
+  width: 100%;
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.content-page thead {
+  background: linear-gradient(135deg, #1274c0, #0d5a94);
+  color: white;
+}
+
+.content-page th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.content-page td {
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid #f0f0f0;
+  color: #444;
+}
+
+.content-page tbody tr:nth-child(even) {
+  background: #f9fafb;
+}
+
+.content-page tbody tr:hover {
+  background: #e8f4fd;
+}
+
+.content-page blockquote {
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  border-left: 4px solid var(--jd-blue);
+  background: linear-gradient(135deg, #e8f4fd, #f0f7ff);
+  border-radius: 0 8px 8px 0;
+  font-style: normal;
+  color: #333;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.content-page blockquote strong {
+  color: #1274c0;
+}
+
+.content-page blockquote p {
+  margin: 0;
+  color: #333;
+}
+
+.content-page strong {
+  font-weight: 700;
+  color: #222;
+}
+
+.content-page code {
+  background: #f3f4f6;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.88rem;
+  color: #d63384;
+  font-family: monospace;
+}
+
+.content-page pre {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 1.25rem 0;
+  font-size: 0.875rem;
   line-height: 1.6;
 }
 
-.content-page a {
-  color: var(--jd-blue);
-  font-weight: 500;
+.content-page pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
 }
 
-.content-page a:hover {
-  text-decoration: underline;
+.content-page hr {
+  margin: 2rem 0;
+  border: none;
+  border-top: 2px solid #e8f4fd;
+}
+
+.content-page img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 1rem 0;
+  border: 1px solid #e0e0e0;
 }
 
 .jd-btn-call {

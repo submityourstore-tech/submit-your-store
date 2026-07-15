@@ -7,6 +7,7 @@ import { SearchHero } from "@/components/SearchHero";
 import { SidePromoTabs } from "@/components/SidePromoTabs";
 import { getActiveSubcategoryStats, getActiveVerticalStats } from "@/lib/categories.server";
 import { getFeaturedBusinesses, getPublicBusinessCount } from "@/lib/businesses";
+import { getAllArticles } from "@/lib/articles";
 import { getLocationStats } from "@/lib/locations";
 import { getReviewSummariesForBusinesses } from "@/lib/reviews.server";
 import { getUtilityTool } from "@/lib/tools/utility-registry";
@@ -60,6 +61,7 @@ export default async function HomePage() {
   const reviewSummaries = await getReviewSummariesForBusinesses(featured.map((b) => b.id));
 
   const featuredTools = FEATURED_TOOL_SLUGS.map((slug) => getUtilityTool(slug)).filter(Boolean);
+  const articles = getAllArticles();
 
   return (
     <div className="bg-white">
@@ -227,22 +229,25 @@ export default async function HomePage() {
                 Tips, guides, and insights for local businesses.
               </p>
             </div>
-            <Link href="/articles" className="text-sm font-semibold text-[#1274c0] hover:underline">
+            <Link href="/blog" className="text-sm font-semibold text-[#1274c0] hover:underline">
               See all articles →
             </Link>
           </div>
-          <div className="mt-5 rounded-lg border border-[#e0e0e0] bg-[#f7f7f7] p-8 text-center">
-            <span className="text-3xl">📰</span>
-            <p className="mt-3 font-semibold text-[#333]">Articles coming soon</p>
-            <p className="mt-1 text-sm text-[#717171]">
-              We&apos;re working on in-depth guides to help your business grow.
-            </p>
-            <Link
-              href="/articles"
-              className="mt-4 inline-block rounded border border-[#1274c0] px-5 py-2 text-sm font-semibold text-[#1274c0] transition hover:bg-[#1274c0] hover:text-white"
-            >
-              Browse Articles
-            </Link>
+          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {articles.slice(0, 3).map((a) => (
+              <Link
+                key={a.slug}
+                href={`/articles/${a.slug}`}
+                className="group flex flex-col rounded-lg border border-[#e0e0e0] bg-white p-5 shadow-sm transition hover:shadow-md"
+              >
+                <span className="mb-2 inline-block self-start rounded-full bg-[#e8f4fd] px-2.5 py-0.5 text-xs font-semibold text-[#1274c0]">
+                  {a.category}
+                </span>
+                <h3 className="font-bold text-[#111] group-hover:text-[#1274c0]">{a.title}</h3>
+                <p className="mt-2 flex-1 text-sm text-[#555] line-clamp-2">{a.description}</p>
+                <span className="mt-3 text-xs font-semibold text-[#1274c0]">Read article &rarr;</span>
+              </Link>
+            ))}
           </div>
         </div>
       </section>

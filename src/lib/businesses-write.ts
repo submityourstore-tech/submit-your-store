@@ -18,11 +18,25 @@ function slugifyName(text: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-function uniqueBusinessId(name: string, used: Set<string>): string {
+function uniqueBusinessId(name: string, used: Set<string>, city?: string, state?: string): string {
   const base = slugifyName(name) || "business";
   if (!used.has(base)) {
     used.add(base);
     return base;
+  }
+  if (city) {
+    const withCity = `${base}-${slugifyName(city)}`;
+    if (!used.has(withCity)) {
+      used.add(withCity);
+      return withCity;
+    }
+    if (state) {
+      const withCityState = `${base}-${slugifyName(city)}-${slugifyName(state)}`;
+      if (!used.has(withCityState)) {
+        used.add(withCityState);
+        return withCityState;
+      }
+    }
   }
   let n = 2;
   while (used.has(`${base}-${n}`)) n += 1;
@@ -112,7 +126,7 @@ export async function appendBusiness(business: Business): Promise<Business> {
 export async function publishNewListing(payload: NewListingPayload): Promise<Business> {
   const rows = await readBusinesses();
   const usedIds = new Set(rows.map((b) => b.id));
-  const id = uniqueBusinessId(payload.businessName, usedIds);
+  const id = uniqueBusinessId(payload.businessName, usedIds, payload.city, payload.state);
   const { vertical, category, categorySlug } = resolveCategory(payload);
 
   const media = await resolveListingMediaUrls(
@@ -194,8 +208,11 @@ export async function publishAdminBusiness(input: AdminBusinessInput): Promise<B
     throw new DuplicateGbpError(duplicate.gbpUrl, duplicate.existing);
   }
 
+  const city = input.city?.trim() || "Dallas";
+  const state = input.state?.trim() || "TX";
+
   const usedIds = new Set(rows.map((b) => b.id));
-  const id = uniqueBusinessId(input.businessName, usedIds);
+  const id = uniqueBusinessId(input.businessName, usedIds, city, state);
 
   const { vertical, category, categorySlug } = resolveCategory({
     businessName: input.businessName,
@@ -209,9 +226,6 @@ export async function publishAdminBusiness(input: AdminBusinessInput): Promise<B
 
   const { uploadBusinessMediaFromUrls } = await import("@/lib/remote-media.server");
   const media = await uploadBusinessMediaFromUrls(id, input.logoUrl, input.galleryUrls ?? []);
-
-  const city = input.city?.trim() || "Dallas";
-  const state = input.state?.trim() || "TX";
   const phoneRaw = input.phone?.trim() || "(000) 000-0000";
 
   const business: Business = {

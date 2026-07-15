@@ -9,7 +9,6 @@ const NAV_LINKS = [
   { href: "/listings", label: "Listings" },
   { href: "/tools", label: "Free Tools" },
   { href: "/blog", label: "Blog" },
-  { href: "/articles", label: "Articles" },
 ];
 
 export function SiteHeaderNav() {

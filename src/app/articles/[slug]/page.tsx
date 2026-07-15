@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArticleBanner } from "@/components/ArticleBanner";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { getAllArticles, getArticle, getRelatedArticles } from "@/lib/articles";
 import { getSiteUrl } from "@/lib/site-config";
@@ -34,12 +35,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&ndash;/g, "–")
+    .replace(/&mdash;/g, "—");
+}
+
 function extractHeadings(html: string): { id: string; text: string; level: number }[] {
   const regex = /<h([23])\s+id="([^"]+)"[^>]*>(.*?)<\/h[23]>/gi;
   const headings: { id: string; text: string; level: number }[] = [];
   let match;
   while ((match = regex.exec(html)) !== null) {
-    const text = match[3].replace(/<[^>]+>/g, "");
+    const text = decodeHtmlEntities(match[3].replace(/<[^>]+>/g, ""));
     headings.push({ id: match[2], text, level: parseInt(match[1]) });
   }
   return headings;
@@ -75,6 +87,12 @@ export default async function ArticlePage({ params }: PageProps) {
           {/* Main content */}
           <article className="min-w-0 flex-1">
             <header className="border-b border-[#e0e0e0] pb-6">
+              <ArticleBanner
+                title={article.title}
+                category={article.category}
+                className="mb-5 shadow-md"
+              />
+
               <span
                 className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${categoryColors[article.category] ?? "bg-[#f3f4f6] text-[#374151]"}`}
               >
